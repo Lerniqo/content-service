@@ -23,10 +23,9 @@ export class Neo4jService {
     async onModuleInit() {
         try {
             const info = await this.driver.getServerInfo();
-            this.logger.info(`Connected to Neo4j: ${info}`);
+            this.logger.info(`Connected to Neo4j`);
         } catch (error) {
-            this.logger.error('Failed to connect to Neo4j', error);
-            throw error;
+            this.logger.error('Failed to connect to Neo4j');
         }
     }
 
@@ -41,7 +40,7 @@ export class Neo4jService {
             const result = await session.run(cypher, params);
             return result.records.map(record => record.toObject());
         } catch (error) {
-            this.logger.error('Failed to execute Cypher query', error);
+            this.logger.error('Failed to execute Cypher query');
             throw error;
         } finally {
             await session.close();
@@ -54,7 +53,7 @@ export class Neo4jService {
             const result = await session.run(cypher, params);
             return result.records.map(record => record.toObject());
         } catch (error) {
-            this.logger.error('Failed to execute Cypher query', error);
+            this.logger.error('Failed to execute Cypher query');
             throw error;
         } finally {
             await session.close();
