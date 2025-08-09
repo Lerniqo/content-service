@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from '../health/health.module';
 import { Neo4jModule } from '../common/neo4j/neo4j.module';
+import { ConceptsModule } from '../concepts/concepts.module';
 
 @Module({
     imports: [LoggerModule.forRoot({
@@ -22,7 +23,7 @@ import { Neo4jModule } from '../common/neo4j/neo4j.module';
         level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
         autoLogging: true, // logs every request automatically
       },
-    }), HealthModule, Neo4jModule],
+    }), HealthModule, Neo4jModule, ConceptsModule],
     controllers: [AppController],
     providers: [AppService],
 })
