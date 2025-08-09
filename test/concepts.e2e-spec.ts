@@ -55,7 +55,7 @@ describe('ConceptsController (e2e)', () => {
       id: 'test-concept-123',
       name: 'Test Matter',
       type: 'Matter',
-      dependantConceptId: 'parent-concept-456'
+      parentId: 'parent-concept-456'
     };
 
     afterEach(async () => {
@@ -157,7 +157,7 @@ describe('ConceptsController (e2e)', () => {
         });
     });
 
-    it('should create concept without dependantConceptId', () => {
+    it('should create concept without parentId', () => {
       const conceptWithoutParent = {
         id: 'test-concept-no-parent',
         name: 'Independent Concept',

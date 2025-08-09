@@ -2,7 +2,6 @@ import { Logger } from "nestjs-pino";
 import { Injectable } from "@nestjs/common";
 import { Neo4jService } from "../common/neo4j/neo4j.service";
 import { CreateConceptDto } from "./dto/create-concept.dto";
-import { Concept } from "../libs/shared-types/graph-model";
 
 @Injectable()
 export class ConceptsService {
@@ -15,7 +14,7 @@ export class ConceptsService {
         createConceptDto: CreateConceptDto,
         adminId: string,
     ){
-       this.logger.log(`Creating concept with data: ${JSON.stringify(CreateConceptDto)} by ${adminId}`, ConceptsService.name);
+       this.logger.log(`Creating concept with data: ${JSON.stringify(createConceptDto)} by ${adminId}`, ConceptsService.name);
 
         const findConcept = `
             MATCH (c:Concept {id: $id})
@@ -26,7 +25,7 @@ export class ConceptsService {
             CREATE (c:Concept {
                 id: $id,
                 name: $name,
-                type: $type,
+                type: $type
             })
             RETURN c
         `;
@@ -56,25 +55,25 @@ export class ConceptsService {
                 type: createConceptDto.type,
             });
 
-            if (createConceptDto.dependantConceptId) {
+            if (createConceptDto.parentId) {
                 const parent = await tx.run(findConcept, {
-                    id: createConceptDto.dependantConceptId,
+                    id: createConceptDto.parentId,
                 });
 
                 if (parent.records.length === 0) {
-                    this.logger.warn(`Parent concept with ID ${createConceptDto.dependantConceptId} does not exist.`, ConceptsService.name);
-                    throw new Error(`Parent concept with ID ${createConceptDto.dependantConceptId} does not exist.`);
+                    this.logger.warn(`Parent concept with ID ${createConceptDto.parentId} does not exist.`, ConceptsService.name);
+                    throw new Error(`Parent concept with ID ${createConceptDto.parentId} does not exist.`);
                 }
 
                 // Create relationship between new concept and parent
                 await tx.run(createRelationship, {
                     id: createConceptDto.id,
-                    parentId: parent.records[0].get("c").id,
+                    parentId: createConceptDto.parentId,
                 });
             }
             await tx.commit();
 
-            return newConcept;
+            return newConcept.records[0]?.get("c").properties;
         } catch (error) {
             await tx.rollback();
             this.logger.error(`Error creating concept: ${error.message}`, error.stack, ConceptsService.name);

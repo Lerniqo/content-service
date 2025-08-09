@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from '../health/health.module';
 import { Neo4jModule } from '../common/neo4j/neo4j.module';
 import { ConceptsModule } from '../concepts/concepts.module';
+import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
 
 @Module({
     imports: [LoggerModule.forRoot({
@@ -27,4 +28,10 @@ import { ConceptsModule } from '../concepts/concepts.module';
     controllers: [AppController],
     providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(MockAuthMiddleware)
+      .forRoutes('*');
+  }
+}

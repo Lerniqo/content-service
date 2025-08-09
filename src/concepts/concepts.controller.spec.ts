@@ -59,7 +59,7 @@ describe('ConceptsController', () => {
       id: 'concept-123',
       name: 'Matter',
       type: 'Matter',
-      dependantConceptId: 'parent-concept-456',
+      parentId: 'parent-concept-456',
     };
 
     const mockRequest = {
@@ -99,7 +99,7 @@ describe('ConceptsController', () => {
       expect(result).toEqual(mockCreatedConcept);
     });
 
-    it('should create a concept without dependantConceptId', async () => {
+    it('should create a concept without parentId', async () => {
       const conceptWithoutParent: CreateConceptDto = {
         id: 'concept-456',
         name: 'Atom',
@@ -196,7 +196,7 @@ describe('ConceptsController', () => {
         id: 'detailed-concept-789',
         name: 'Complex Molecule',
         type: 'Molecule',
-        dependantConceptId: 'matter-concept-123',
+        parentId: 'matter-concept-123',
       };
 
       mockConceptsService.createConcept.mockResolvedValue(mockCreatedConcept);

@@ -35,12 +35,12 @@ export class CreateConceptDto implements Concept {
   type: ConceptType;
 
     @ApiProperty({
-        description: 'Optional field for any additional information about the concept',
-        example: 'This concept is fundamental to understanding physics.',
+        description: 'Optional parent concept ID to create a relationship',
+        example: 'parent-concept-123',
         required: false,
     })
-    @IsString({ message: 'Description must be a string' })
+    @IsString({ message: 'Parent ID must be a string' })
     @IsOptional()
-  dependantConceptId?: string;
+  parentId?: string;
 
 }
