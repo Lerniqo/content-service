@@ -143,85 +143,50 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
   private logError(exception: unknown, errorResponse: ErrorResponse, request: Request): void {
     const { statusCode, message, requestId } = errorResponse;
+    const emoji = this.getStatusEmoji(statusCode);
+    const reqId = requestId || 'no-id';
     
-    // Create enhanced log context with better readability
-    const logContext = {
-      statusCode,
-      method: request.method,
-      url: request.url,
-      userAgent: request.headers['user-agent'],
-      ip: request.ip || request.connection.remoteAddress,
-      requestId: requestId || 'N/A',
-      timestamp: errorResponse.timestamp,
-    };
-
-    // Create formatted error message with visual separators
-    const formatLogMessage = (level: string, emoji: string, title: string) => {
-      const separator = '═'.repeat(50);
-      return `\n${separator}\n${emoji} ${level.toUpperCase()}: ${title}\n${separator}`;
-    };
-
-    // Log based on status code severity with enhanced formatting
+    // Simple one-line summary for all requests
+    const summary = `${emoji} ${request.method} ${request.url} → ${statusCode} (${reqId})`;
+    
     if (statusCode >= 500) {
-      // Server errors - log as error with full stack trace and enhanced formatting
-      const errorDetails = exception instanceof Error ? {
-        name: exception.name,
-        message: exception.message,
-        stack: exception.stack?.split('\n').slice(0, 10).join('\n'), // Limit stack trace lines
-      } : exception;
-
-      this.logger.error(
-        {
-          ...logContext,
-          error: {
-            type: '🔥 CRITICAL SERVER ERROR',
-            details: errorDetails,
-            severity: 'HIGH',
-            action: 'Immediate investigation required',
-          }
-        },
-        formatLogMessage('error', '🚨', `Server Error [${statusCode}]: ${message}`),
-      );
-    } else if (statusCode >= 400) {
-      // Client errors - log as warning with enhanced context
-      const requestDetails = {
-        body: this.sanitizeRequestBody(request.body),
-        params: Object.keys(request.params || {}).length > 0 ? request.params : null,
-        query: Object.keys(request.query || {}).length > 0 ? request.query : null,
-        headers: this.sanitizeHeaders(request.headers),
+      // Server errors - critical, need full context
+      const errorDetails = {
+        statusCode,
+        method: request.method,
+        url: request.url,
+        requestId: reqId,
+        error: exception instanceof Error ? {
+          name: exception.name,
+          message: exception.message,
+          ...(process.env.NODE_ENV === 'development' && { 
+            stack: exception.stack?.split('\n').slice(0, 5).join('\n') 
+          })
+        } : exception,
+        userAgent: request.headers['user-agent'],
+        ip: request.ip
       };
-
-      this.logger.warn(
-        {
-          ...logContext,
-          request: {
-            type: '⚠️ CLIENT ERROR',
-            details: requestDetails,
-            severity: statusCode >= 450 ? 'MEDIUM' : 'LOW',
-            action: 'Review client request',
-          }
-        },
-        formatLogMessage('warning', '⚠️', `Client Error [${statusCode}]: ${message}`),
-      );
+      
+      this.logger.error(errorDetails, `🚨 SERVER ERROR | ${summary} | ${message}`);
+    } else if (statusCode >= 400) {
+      // Client errors - include relevant request details
+      const clientDetails = {
+        statusCode,
+        method: request.method,
+        url: request.url,
+        requestId: reqId,
+        body: this.sanitizeRequestBody(request.body),
+        params: request.params,
+        query: request.query,
+        userAgent: request.headers['user-agent']
+      };
+      
+      this.logger.warn(clientDetails, `⚠️ CLIENT ERROR | ${summary} | ${message}`);
     } else {
-      // Other errors - log as info with minimal context
-      this.logger.info(
-        {
-          ...logContext,
-          info: {
-            type: 'ℹ️ HTTP EXCEPTION',
-            severity: 'LOW',
-            action: 'Informational only',
-          }
-        },
-        formatLogMessage('info', 'ℹ️', `HTTP Exception [${statusCode}]: ${message}`),
-      );
+      // Other exceptions - minimal logging
+      this.logger.info({ statusCode, method: request.method, url: request.url, requestId: reqId }, 
+        `ℹ️ HTTP EXCEPTION | ${summary} | ${message}`);
     }
-
-    // Add a summary log for quick scanning
-    this.logger.info({
-      summary: `${this.getStatusEmoji(statusCode)} ${request.method} ${request.url} → ${statusCode} (${requestId || 'no-id'})`
-    });
   }
 
   private sanitizeRequestBody(body: any): any {
@@ -243,24 +208,20 @@ export class HttpExceptionFilter implements ExceptionFilter {
   }
 
   private sanitizeHeaders(headers: any): any {
-    if (!headers || typeof headers !== 'object') {
-      return {};
-    }
+    if (!headers || typeof headers !== 'object') return {};
 
-    // Only include relevant headers and sanitize sensitive ones
-    const relevantHeaders = ['content-type', 'accept', 'user-agent', 'x-request-id', 'origin', 'referer'];
-    const sensitiveHeaders = ['authorization', 'cookie', 'x-api-key', 'x-auth-token'];
     const sanitized: any = {};
+    const keepHeaders = ['content-type', 'accept', 'user-agent', 'x-request-id'];
+    const sensitiveHeaders = ['authorization', 'cookie', 'x-api-key', 'x-auth-token'];
 
-    for (const [key, value] of Object.entries(headers)) {
+    Object.entries(headers).forEach(([key, value]) => {
       const lowerKey = key.toLowerCase();
-      
-      if (relevantHeaders.includes(lowerKey)) {
+      if (keepHeaders.includes(lowerKey)) {
         sanitized[key] = value;
       } else if (sensitiveHeaders.includes(lowerKey)) {
         sanitized[key] = '[REDACTED]';
       }
-    }
+    });
 
     return sanitized;
   }
