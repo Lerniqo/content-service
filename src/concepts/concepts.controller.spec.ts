@@ -4,7 +4,8 @@ import { ConceptsService } from './concepts.service';
 import { Logger } from 'nestjs-pino';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { CreateConceptDto } from './dto/create-concept.dto';
-import { ExecutionContext } from '@nestjs/common';
+import { UpdateConceptDto } from './dto/update-concept.dto';
+import { ExecutionContext, NotFoundException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
 describe('ConceptsController', () => {
@@ -15,12 +16,14 @@ describe('ConceptsController', () => {
 
   const mockConceptsService = {
     createConcept: jest.fn(),
+    updateConcept: jest.fn(),
   };
 
   const mockLogger = {
     log: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
+    setContext: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -33,6 +36,10 @@ describe('ConceptsController', () => {
         },
         {
           provide: Logger,
+          useValue: mockLogger,
+        },
+        {
+          provide: 'PinoLogger',
           useValue: mockLogger,
         },
         RolesGuard,
@@ -219,6 +226,142 @@ describe('ConceptsController', () => {
     it('should require admin role for create method', () => {
       const roles = Reflect.getMetadata('roles', controller.create);
       expect(roles).toContain('admin');
+    });
+
+    it('should require admin role for update method', () => {
+      const roles = Reflect.getMetadata('roles', controller.update);
+      expect(roles).toContain('admin');
+    });
+  });
+
+  describe('PUT /concepts/:id', () => {
+    const validUpdateConceptDto: UpdateConceptDto = {
+      name: 'Updated Matter',
+      type: 'Matter',
+      parentId: 'new-parent-concept-789',
+    };
+
+    const mockRequest = {
+      user: {
+        id: 'admin-123',
+        role: ['admin'],
+      },
+    } as any;
+
+    const mockUpdatedConcept = {
+      id: 'concept-123',
+      name: 'Updated Matter',
+      type: 'Matter',
+    };
+
+    it('should update a concept successfully', async () => {
+      mockConceptsService.updateConcept.mockResolvedValue(mockUpdatedConcept);
+
+      const result = await controller.update('concept-123', validUpdateConceptDto, mockRequest);
+
+      expect(conceptsService.updateConcept).toHaveBeenCalledWith(
+        'concept-123',
+        validUpdateConceptDto,
+        'admin-123'
+      );
+      expect(result).toEqual(mockUpdatedConcept);
+    });
+
+    it('should update a concept with partial data', async () => {
+      const partialUpdateDto: UpdateConceptDto = {
+        name: 'Partially Updated Name',
+      };
+
+      mockConceptsService.updateConcept.mockResolvedValue({
+        ...mockUpdatedConcept,
+        name: 'Partially Updated Name',
+      });
+
+      const result = await controller.update('concept-123', partialUpdateDto, mockRequest);
+
+      expect(conceptsService.updateConcept).toHaveBeenCalledWith(
+        'concept-123',
+        partialUpdateDto,
+        'admin-123'
+      );
+      expect(result.name).toBe('Partially Updated Name');
+    });
+
+    it('should handle concept not found error', async () => {
+      const error = new NotFoundException('Concept with ID concept-999 not found.');
+      mockConceptsService.updateConcept.mockRejectedValue(error);
+
+      await expect(
+        controller.update('concept-999', validUpdateConceptDto, mockRequest)
+      ).rejects.toThrow('Concept with ID concept-999 not found.');
+
+      expect(conceptsService.updateConcept).toHaveBeenCalledWith(
+        'concept-999',
+        validUpdateConceptDto,
+        'admin-123'
+      );
+    });
+
+    it('should handle parent concept not found error', async () => {
+      const error = new NotFoundException('Parent concept with ID invalid-parent-123 does not exist.');
+      mockConceptsService.updateConcept.mockRejectedValue(error);
+
+      const updateDtoWithInvalidParent: UpdateConceptDto = {
+        name: 'Updated Concept',
+        parentId: 'invalid-parent-123',
+      };
+
+      await expect(
+        controller.update('concept-123', updateDtoWithInvalidParent, mockRequest)
+      ).rejects.toThrow('Parent concept with ID invalid-parent-123 does not exist.');
+    });
+
+    it('should handle service errors', async () => {
+      const error = new Error('Database connection failed');
+      mockConceptsService.updateConcept.mockRejectedValue(error);
+
+      await expect(
+        controller.update('concept-123', validUpdateConceptDto, mockRequest)
+      ).rejects.toThrow('Database connection failed');
+    });
+
+    it('should extract admin ID from request correctly', async () => {
+      const requestWithDifferentAdminId = {
+        user: {
+          id: 'admin-999',
+          role: ['admin'],
+          email: 'admin@example.com',
+          name: 'Admin User',
+        },
+      } as any;
+
+      mockConceptsService.updateConcept.mockResolvedValue(mockUpdatedConcept);
+
+      await controller.update('concept-123', validUpdateConceptDto, requestWithDifferentAdminId);
+
+      expect(conceptsService.updateConcept).toHaveBeenCalledWith(
+        'concept-123',
+        validUpdateConceptDto,
+        'admin-999'
+      );
+    });
+
+    it('should handle removing parent relationship', async () => {
+      const removeParentDto: UpdateConceptDto = {
+        name: 'Updated Name',
+        parentId: '', // Empty string to remove parent
+      };
+
+      mockConceptsService.updateConcept.mockResolvedValue(mockUpdatedConcept);
+
+      const result = await controller.update('concept-123', removeParentDto, mockRequest);
+
+      expect(conceptsService.updateConcept).toHaveBeenCalledWith(
+        'concept-123',
+        removeParentDto,
+        'admin-123'
+      );
+      expect(result).toEqual(mockUpdatedConcept);
     });
   });
 });

@@ -1,7 +1,8 @@
 import { Logger } from "nestjs-pino";
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from "@nestjs/common";
 import { Neo4jService } from "../common/neo4j/neo4j.service";
 import { CreateConceptDto } from "./dto/create-concept.dto";
+import { UpdateConceptDto } from "./dto/update-concept.dto";
 
 @Injectable()
 export class ConceptsService {
@@ -78,6 +79,108 @@ export class ConceptsService {
             await tx.rollback();
             this.logger.error(`Error creating concept: ${error.message}`, error.stack, ConceptsService.name);
             throw new Error(`Error creating concept with ID ${createConceptDto.id}.`);
+        } finally {
+            await session.close();
+        }
+    }
+
+    async updateConcept(
+        id: string,
+        updateConceptDto: UpdateConceptDto,
+        adminId: string,
+    ) {
+        // Validate input
+        if (!id || id.trim().length === 0) {
+            throw new BadRequestException('Concept ID cannot be empty');
+        }
+
+        if (!updateConceptDto || Object.keys(updateConceptDto).length === 0) {
+            throw new BadRequestException('Update data cannot be empty');
+        }
+
+        this.logger.log(`Updating concept ${id} with data: ${JSON.stringify(updateConceptDto)} by ${adminId}`, ConceptsService.name);
+
+        const findConceptQuery = `
+            MATCH (c:Concept {id: $id})
+            RETURN c
+        `;
+
+        const updateConceptQuery = `
+            MATCH (c:Concept {id: $id})
+            SET c.name = COALESCE($name, c.name),
+                c.type = COALESCE($type, c.type)
+            RETURN c
+        `;
+
+        const removeExistingRelationshipQuery = `
+            MATCH (p:Concept)-[r:CONSISTS]->(c:Concept {id: $id})
+            DELETE r
+        `;
+
+        const createParentRelationshipQuery = `
+            MATCH (c:Concept {id: $id})
+            MATCH (p:Concept {id: $parentId})
+            CREATE (p)-[:CONSISTS]->(c)
+            RETURN p, c
+        `;
+
+        const session = this.neo4j.getSession();
+        const tx = session.beginTransaction();
+        try {
+            // Check if concept exists
+            const existingConceptResult = await tx.run(findConceptQuery, { id });
+            
+            if (existingConceptResult.records.length === 0) {
+                this.logger.warn(`Concept with ID ${id} not found.`, ConceptsService.name);
+                throw new NotFoundException(`Concept with ID ${id} not found.`);
+            }
+
+            // Update concept properties
+            const updatedConceptResult = await tx.run(updateConceptQuery, {
+                id,
+                name: updateConceptDto.name || null,
+                type: updateConceptDto.type || null,
+            });
+
+            // Handle parent relationship update
+            if (updateConceptDto.hasOwnProperty('parentId')) {
+                // Remove existing parent relationships first
+                await tx.run(removeExistingRelationshipQuery, { id });
+
+                // If parentId is provided and not null/empty, create new relationship
+                if (updateConceptDto.parentId && updateConceptDto.parentId.trim() !== '') {
+                    // Check if parent exists
+                    const parentResult = await tx.run(findConceptQuery, {
+                        id: updateConceptDto.parentId,
+                    });
+
+                    if (parentResult.records.length === 0) {
+                        this.logger.warn(`Parent concept with ID ${updateConceptDto.parentId} does not exist.`, ConceptsService.name);
+                        throw new NotFoundException(`Parent concept with ID ${updateConceptDto.parentId} does not exist.`);
+                    }
+
+                    // Create new parent relationship
+                    await tx.run(createParentRelationshipQuery, {
+                        id,
+                        parentId: updateConceptDto.parentId,
+                    });
+                }
+                // If parentId is null, empty, or undefined, we just remove the relationship (already done above)
+            }
+
+            await tx.commit();
+
+            return updatedConceptResult.records[0]?.get("c").properties;
+        } catch (error) {
+            await tx.rollback();
+            this.logger.error(`Error updating concept: ${error.message}`, error.stack, ConceptsService.name);
+            
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            }
+            
+            // For any other errors, throw internal server error
+            throw new InternalServerErrorException(`Failed to update concept with ID ${id}. Please try again.`);
         } finally {
             await session.close();
         }
