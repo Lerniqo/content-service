@@ -506,4 +506,170 @@ describe('ConceptsController (e2e)', () => {
       }
     });
   });
+
+  describe('POST /concepts/:id/prerequisites', () => {
+    const testConceptId = 'test-concept-for-prerequisites';
+    const testPrerequisiteId = 'test-prerequisite-concept';
+
+    beforeEach(async () => {
+      // Create test concepts
+      const session = neo4jService.getSession();
+      try {
+        // Clean up any existing test data
+        await session.run(`
+          MATCH (c:Concept) 
+          WHERE c.id IN [$conceptId, $prerequisiteId] 
+          DETACH DELETE c
+        `, {
+          conceptId: testConceptId,
+          prerequisiteId: testPrerequisiteId
+        });
+
+        // Create test concepts
+        await session.run(`
+          CREATE (c1:Concept {id: $conceptId, name: 'Test Concept', type: 'Matter'})
+          CREATE (c2:Concept {id: $prerequisiteId, name: 'Test Prerequisite', type: 'Matter'})
+        `, {
+          conceptId: testConceptId,
+          prerequisiteId: testPrerequisiteId
+        });
+      } finally {
+        await session.close();
+      }
+    });
+
+    afterEach(async () => {
+      // Clean up test data
+      const session = neo4jService.getSession();
+      try {
+        await session.run(`
+          MATCH (c:Concept) 
+          WHERE c.id IN [$conceptId, $prerequisiteId] 
+          DETACH DELETE c
+        `, {
+          conceptId: testConceptId,
+          prerequisiteId: testPrerequisiteId
+        });
+      } finally {
+        await session.close();
+      }
+    });
+
+    it('should create a prerequisite relationship with admin role', async () => {
+      const prerequisiteDto = {
+        prerequisiteId: testPrerequisiteId
+      };
+
+      await request(app.getHttpServer())
+        .post(`/concepts/${testConceptId}/prerequisites`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send(prerequisiteDto)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body).toEqual({
+            message: 'Prerequisite relationship created successfully'
+          });
+        });
+
+      // Verify the relationship was created in the database
+      const session = neo4jService.getSession();
+      try {
+        const result = await session.run(`
+          MATCH (c:Concept {id: $conceptId})-[r:HAS_PREREQUISITE]->(p:Concept {id: $prerequisiteId})
+          RETURN r
+        `, {
+          conceptId: testConceptId,
+          prerequisiteId: testPrerequisiteId
+        });
+
+        expect(result.records.length).toBe(1);
+      } finally {
+        await session.close();
+      }
+    });
+
+    it('should reject request from non-admin user', async () => {
+      const prerequisiteDto = {
+        prerequisiteId: testPrerequisiteId
+      };
+
+      await request(app.getHttpServer())
+        .post(`/concepts/${testConceptId}/prerequisites`)
+        .set('user', JSON.stringify(mockNonAdminUser))
+        .send(prerequisiteDto)
+        .expect(403);
+    });
+
+    it('should return 400 for missing prerequisiteId', async () => {
+      await request(app.getHttpServer())
+        .post(`/concepts/${testConceptId}/prerequisites`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send({})
+        .expect(400);
+    });
+
+    it('should return 400 for empty prerequisiteId', async () => {
+      await request(app.getHttpServer())
+        .post(`/concepts/${testConceptId}/prerequisites`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send({ prerequisiteId: '' })
+        .expect(400);
+    });
+
+    it('should return 404 for non-existent concept', async () => {
+      const prerequisiteDto = {
+        prerequisiteId: testPrerequisiteId
+      };
+
+      await request(app.getHttpServer())
+        .post(`/concepts/non-existent-concept/prerequisites`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send(prerequisiteDto)
+        .expect(404);
+    });
+
+    it('should return 404 for non-existent prerequisite', async () => {
+      const prerequisiteDto = {
+        prerequisiteId: 'non-existent-prerequisite'
+      };
+
+      await request(app.getHttpServer())
+        .post(`/concepts/${testConceptId}/prerequisites`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send(prerequisiteDto)
+        .expect(404);
+    });
+
+    it('should return 400 when trying to create duplicate relationship', async () => {
+      const prerequisiteDto = {
+        prerequisiteId: testPrerequisiteId
+      };
+
+      // Create the relationship first time
+      await request(app.getHttpServer())
+        .post(`/concepts/${testConceptId}/prerequisites`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send(prerequisiteDto)
+        .expect(200);
+
+      // Try to create the same relationship again
+      await request(app.getHttpServer())
+        .post(`/concepts/${testConceptId}/prerequisites`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send(prerequisiteDto)
+        .expect(400);
+    });
+
+    it('should return 400 for invalid concept ID', async () => {
+      const prerequisiteDto = {
+        prerequisiteId: testPrerequisiteId
+      };
+
+      await request(app.getHttpServer())
+        .post(`/concepts/ /prerequisites`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send(prerequisiteDto)
+        .expect(400);
+    });
+  });
 });

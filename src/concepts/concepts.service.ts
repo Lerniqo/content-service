@@ -186,4 +186,94 @@ export class ConceptsService {
         }
     }
 
+    async createPrerequisiteRelationship(
+        conceptId: string,
+        prerequisiteId: string,
+        adminId: string,
+    ): Promise<{ message: string }> {
+        // Validate input
+        if (!conceptId || conceptId.trim().length === 0) {
+            throw new BadRequestException('Concept ID cannot be empty');
+        }
+
+        if (!prerequisiteId || prerequisiteId.trim().length === 0) {
+            throw new BadRequestException('Prerequisite ID cannot be empty');
+        }
+
+        this.logger.log(`Creating prerequisite relationship: ${conceptId} -> ${prerequisiteId} by ${adminId}`, ConceptsService.name);
+
+        const findConceptQuery = `
+            MATCH (c:Concept {id: $id})
+            RETURN c
+        `;
+
+        const checkExistingRelationshipQuery = `
+            MATCH (c:Concept {id: $conceptId})-[r:HAS_PREREQUISITE]->(p:Concept {id: $prerequisiteId})
+            RETURN r
+        `;
+
+        const createPrerequisiteRelationshipQuery = `
+            MATCH (c:Concept {id: $conceptId})
+            MATCH (p:Concept {id: $prerequisiteId})
+            CREATE (c)-[:HAS_PREREQUISITE]->(p)
+            RETURN c, p
+        `;
+
+        const session = this.neo4j.getSession();
+        const tx = session.beginTransaction();
+        try {
+            // Check if both concepts exist
+            const conceptResult = await tx.run(findConceptQuery, { id: conceptId });
+            if (conceptResult.records.length === 0) {
+                this.logger.warn(`Concept with ID ${conceptId} not found.`, ConceptsService.name);
+                throw new NotFoundException(`Concept with ID ${conceptId} not found.`);
+            }
+
+            const prerequisiteResult = await tx.run(findConceptQuery, { id: prerequisiteId });
+            if (prerequisiteResult.records.length === 0) {
+                this.logger.warn(`Prerequisite concept with ID ${prerequisiteId} not found.`, ConceptsService.name);
+                throw new NotFoundException(`Prerequisite concept with ID ${prerequisiteId} not found.`);
+            }
+
+            // Check if relationship already exists
+            const existingRelationshipResult = await tx.run(checkExistingRelationshipQuery, {
+                conceptId,
+                prerequisiteId,
+            });
+
+            if (existingRelationshipResult.records.length > 0) {
+                this.logger.warn(`Prerequisite relationship already exists between ${conceptId} and ${prerequisiteId}.`, ConceptsService.name);
+                throw new BadRequestException(`Prerequisite relationship already exists between these concepts.`);
+            }
+
+            // Create the prerequisite relationship
+            const relationshipResult = await tx.run(createPrerequisiteRelationshipQuery, {
+                conceptId,
+                prerequisiteId,
+            });
+
+            if (relationshipResult.records.length === 0) {
+                throw new Error('Failed to create prerequisite relationship');
+            }
+
+            await tx.commit();
+
+            this.logger.log(`Prerequisite relationship created successfully: ${conceptId} -> ${prerequisiteId}`, ConceptsService.name);
+            return { message: "Prerequisite relationship created successfully" };
+
+        } catch (error) {
+            await tx.rollback();
+            this.logger.error(`Error creating prerequisite relationship: ${error.message}`, error.stack, ConceptsService.name);
+            
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+                throw error;
+            }
+            
+            // For any other errors, throw internal server error
+            throw new InternalServerErrorException(`Failed to create prerequisite relationship. Please try again.`);
+        } finally {
+            await session.close();
+        }
+    }
+
 }
