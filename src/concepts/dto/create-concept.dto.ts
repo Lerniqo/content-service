@@ -1,7 +1,7 @@
 import { Concept, CONCEPT_TYPES } from "src/libs/shared-types";
 import type { ConceptType } from "src/libs/shared-types";
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, IsNotEmpty, IsIn, Length } from "class-validator";
+import { IsString, IsNotEmpty, IsIn, Length, IsOptional } from "class-validator";
 
 
 export class CreateConceptDto implements Concept {
@@ -33,4 +33,14 @@ export class CreateConceptDto implements Concept {
   @IsNotEmpty({ message: 'Type is required' })
   @IsIn(CONCEPT_TYPES, { message: `Type must be one of: ${CONCEPT_TYPES.join(', ')}` })
   type: ConceptType;
+
+    @ApiProperty({
+        description: 'Optional field for any additional information about the concept',
+        example: 'This concept is fundamental to understanding physics.',
+        required: false,
+    })
+    @IsString({ message: 'Description must be a string' })
+    @IsOptional()
+  dependantConceptId?: string;
+
 }

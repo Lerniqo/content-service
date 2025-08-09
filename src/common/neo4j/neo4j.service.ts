@@ -34,13 +34,19 @@ export class Neo4jService {
         this.logger.info('Neo4j driver closed');
     }
 
-    async read(cypher: string, params?: Record<string, any>): Promise<any> {
+    getSession(): Session {
         const session = this.driver.session();
+        this.logger.debug('Created a new Neo4j session');
+        return session;
+    }
+
+    async read(cypher: string, params?: Record<string, any>): Promise<any> {
+        const session = this.getSession();
         try {
-            const result = await session.run(cypher, params);
+            const result = await session.executeRead(tx => tx.run(cypher, params));
             return result.records.map(record => record.toObject());
         } catch (error) {
-            this.logger.error('Failed to execute Cypher query');
+            this.logger.error('Failed to execute Cypher read query');
             throw error;
         } finally {
             await session.close();
@@ -48,16 +54,15 @@ export class Neo4jService {
     }
 
     async write(cypher: string, params?: Record<string, any>): Promise<any> {
-        const session = this.driver.session();
+        const session = this.getSession();
         try {
-            const result = await session.run(cypher, params);
+            const result = await session.executeWrite(tx => tx.run(cypher, params));
             return result.records.map(record => record.toObject());
         } catch (error) {
-            this.logger.error('Failed to execute Cypher query');
+            this.logger.error('Failed to execute Cypher write query');
             throw error;
         } finally {
             await session.close();
         }
     }
-
 }
