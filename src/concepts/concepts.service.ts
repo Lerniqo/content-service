@@ -1,21 +1,34 @@
-import { Logger } from "nestjs-pino";
+import { PinoLogger } from "nestjs-pino";
 import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from "@nestjs/common";
 import { Neo4jService } from "../common/neo4j/neo4j.service";
 import { CreateConceptDto } from "./dto/create-concept.dto";
 import { UpdateConceptDto } from "./dto/update-concept.dto";
+import { LoggerUtil } from "../common/utils/logger.util";
 
 @Injectable()
 export class ConceptsService {
     constructor(
-        private readonly logger: Logger,
+        private readonly logger: PinoLogger,
         private readonly neo4j: Neo4jService,
-    ){}
+    ){
+        this.logger.setContext(ConceptsService.name);
+    }
 
     async createConcept(
         createConceptDto: CreateConceptDto,
         adminId: string,
     ){
-       this.logger.log(`Creating concept with data: ${JSON.stringify(createConceptDto)} by ${adminId}`, ConceptsService.name);
+        LoggerUtil.logInfo(
+            this.logger,
+            'ConceptsService',
+            'Creating concept',
+            { 
+                conceptId: createConceptDto.id,
+                name: createConceptDto.name,
+                type: createConceptDto.type,
+                adminId 
+            }
+        );
 
         const findConcept = `
             MATCH (c:Concept {id: $id})
@@ -46,7 +59,12 @@ export class ConceptsService {
             });
             
             if (existingConcept.records.length > 0) {
-                this.logger.warn(`Concept with ID ${createConceptDto.id} already exists.`, ConceptsService.name);
+                LoggerUtil.logWarn(
+                    this.logger,
+                    'ConceptsService',
+                    'Concept already exists',
+                    { conceptId: createConceptDto.id }
+                );
                 throw new Error(`Concept with ID ${createConceptDto.id} already exists.`);
             }
 
@@ -62,7 +80,12 @@ export class ConceptsService {
                 });
 
                 if (parent.records.length === 0) {
-                    this.logger.warn(`Parent concept with ID ${createConceptDto.parentId} does not exist.`, ConceptsService.name);
+                    LoggerUtil.logWarn(
+                        this.logger,
+                        'ConceptsService',
+                        'Parent concept not found',
+                        { parentId: createConceptDto.parentId }
+                    );
                     throw new Error(`Parent concept with ID ${createConceptDto.parentId} does not exist.`);
                 }
 
@@ -77,7 +100,13 @@ export class ConceptsService {
             return newConcept.records[0]?.get("c").properties;
         } catch (error) {
             await tx.rollback();
-            this.logger.error(`Error creating concept: ${error.message}`, error.stack, ConceptsService.name);
+            LoggerUtil.logError(
+                this.logger,
+                'ConceptsService',
+                'Error creating concept',
+                error,
+                { conceptId: createConceptDto.id, adminId }
+            );
             throw new Error(`Error creating concept with ID ${createConceptDto.id}.`);
         } finally {
             await session.close();
@@ -98,7 +127,16 @@ export class ConceptsService {
             throw new BadRequestException('Update data cannot be empty');
         }
 
-        this.logger.log(`Updating concept ${id} with data: ${JSON.stringify(updateConceptDto)} by ${adminId}`, ConceptsService.name);
+        LoggerUtil.logInfo(
+            this.logger,
+            'ConceptsService',
+            'Updating concept',
+            { 
+                conceptId: id,
+                updateData: updateConceptDto,
+                adminId 
+            }
+        );
 
         const findConceptQuery = `
             MATCH (c:Concept {id: $id})
@@ -131,7 +169,12 @@ export class ConceptsService {
             const existingConceptResult = await tx.run(findConceptQuery, { id });
             
             if (existingConceptResult.records.length === 0) {
-                this.logger.warn(`Concept with ID ${id} not found.`, ConceptsService.name);
+                LoggerUtil.logWarn(
+                    this.logger,
+                    'ConceptsService',
+                    'Concept not found for update',
+                    { conceptId: id }
+                );
                 throw new NotFoundException(`Concept with ID ${id} not found.`);
             }
 
@@ -155,7 +198,12 @@ export class ConceptsService {
                     });
 
                     if (parentResult.records.length === 0) {
-                        this.logger.warn(`Parent concept with ID ${updateConceptDto.parentId} does not exist.`, ConceptsService.name);
+                        LoggerUtil.logWarn(
+                            this.logger,
+                            'ConceptsService',
+                            'Parent concept not found for update',
+                            { parentId: updateConceptDto.parentId }
+                        );
                         throw new NotFoundException(`Parent concept with ID ${updateConceptDto.parentId} does not exist.`);
                     }
 
@@ -173,7 +221,13 @@ export class ConceptsService {
             return updatedConceptResult.records[0]?.get("c").properties;
         } catch (error) {
             await tx.rollback();
-            this.logger.error(`Error updating concept: ${error.message}`, error.stack, ConceptsService.name);
+            LoggerUtil.logError(
+                this.logger,
+                'ConceptsService',
+                'Error updating concept',
+                error,
+                { conceptId: id, adminId }
+            );
             
             if (error instanceof NotFoundException || error instanceof BadRequestException) {
                 throw error;
@@ -200,7 +254,16 @@ export class ConceptsService {
             throw new BadRequestException('Prerequisite ID cannot be empty');
         }
 
-        this.logger.log(`Creating prerequisite relationship: ${conceptId} -> ${prerequisiteId} by ${adminId}`, ConceptsService.name);
+        LoggerUtil.logInfo(
+            this.logger,
+            'ConceptsService',
+            'Creating prerequisite relationship',
+            { 
+                conceptId,
+                prerequisiteId,
+                adminId 
+            }
+        );
 
         const findConceptQuery = `
             MATCH (c:Concept {id: $id})
@@ -225,13 +288,23 @@ export class ConceptsService {
             // Check if both concepts exist
             const conceptResult = await tx.run(findConceptQuery, { id: conceptId });
             if (conceptResult.records.length === 0) {
-                this.logger.warn(`Concept with ID ${conceptId} not found.`, ConceptsService.name);
+                LoggerUtil.logWarn(
+                    this.logger,
+                    'ConceptsService',
+                    'Concept not found for prerequisite',
+                    { conceptId }
+                );
                 throw new NotFoundException(`Concept with ID ${conceptId} not found.`);
             }
 
             const prerequisiteResult = await tx.run(findConceptQuery, { id: prerequisiteId });
             if (prerequisiteResult.records.length === 0) {
-                this.logger.warn(`Prerequisite concept with ID ${prerequisiteId} not found.`, ConceptsService.name);
+                LoggerUtil.logWarn(
+                    this.logger,
+                    'ConceptsService',
+                    'Prerequisite concept not found',
+                    { prerequisiteId }
+                );
                 throw new NotFoundException(`Prerequisite concept with ID ${prerequisiteId} not found.`);
             }
 
@@ -242,7 +315,12 @@ export class ConceptsService {
             });
 
             if (existingRelationshipResult.records.length > 0) {
-                this.logger.warn(`Prerequisite relationship already exists between ${conceptId} and ${prerequisiteId}.`, ConceptsService.name);
+                LoggerUtil.logWarn(
+                    this.logger,
+                    'ConceptsService',
+                    'Prerequisite relationship already exists',
+                    { conceptId, prerequisiteId }
+                );
                 throw new BadRequestException(`Prerequisite relationship already exists between these concepts.`);
             }
 
@@ -258,12 +336,23 @@ export class ConceptsService {
 
             await tx.commit();
 
-            this.logger.log(`Prerequisite relationship created successfully: ${conceptId} -> ${prerequisiteId}`, ConceptsService.name);
+            LoggerUtil.logInfo(
+                this.logger,
+                'ConceptsService',
+                'Prerequisite relationship created successfully',
+                { conceptId, prerequisiteId }
+            );
             return { message: "Prerequisite relationship created successfully" };
 
         } catch (error) {
             await tx.rollback();
-            this.logger.error(`Error creating prerequisite relationship: ${error.message}`, error.stack, ConceptsService.name);
+            LoggerUtil.logError(
+                this.logger,
+                'ConceptsService',
+                'Error creating prerequisite relationship',
+                error,
+                { conceptId, prerequisiteId, adminId }
+            );
             
             if (error instanceof NotFoundException || error instanceof BadRequestException) {
                 throw error;

@@ -37,6 +37,7 @@ export interface Resource {
   description?: string;
   url: string;
   isPublic: boolean;
+  price?: number;
   tags?: string[];
   createdAt?: Date;
   author: Teacher | Admin;
