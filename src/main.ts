@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app/app.module';
 import { Logger, PinoLogger } from 'nestjs-pino';
 import { HttpExceptionFilter } from './common/filters/http-exception/http-exception.filter';
@@ -12,6 +13,20 @@ async function bootstrap() {
   // Get PinoLogger instance and create the filter with it
   const pinoLogger = await app.resolve(PinoLogger);
   app.useGlobalFilters(new HttpExceptionFilter(pinoLogger));
+  
+  // Configure global validation pipe
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true, // Remove properties that are not in the DTO
+    forbidNonWhitelisted: true, // Throw error if non-whitelisted properties are present
+    transform: true, // Automatically transform payloads to DTO instances
+    transformOptions: {
+      enableImplicitConversion: true, // Automatically convert primitive types
+    },
+    validationError: {
+      target: false, // Don't expose the target object in validation errors
+      value: false, // Don't expose the value in validation errors
+    }
+  }));
   
   const port = process.env.PORT ?? 3000;
   

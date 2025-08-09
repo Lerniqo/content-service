@@ -278,4 +278,232 @@ describe('ConceptsController (e2e)', () => {
       }
     });
   });
+
+  describe('PUT /concepts/:id', () => {
+    const testConceptId = 'test-update-concept-123';
+    const validUpdateConceptDto = {
+      name: 'Updated Test Matter',
+      type: 'Molecule',
+      parentId: 'updated-parent-456'
+    };
+
+    beforeEach(async () => {
+      // Create a test concept to update
+      await request(app.getHttpServer())
+        .post('/concepts')
+        .set('user', JSON.stringify(mockAdminUser))
+        .send({
+          id: testConceptId,
+          name: 'Original Test Matter',
+          type: 'Matter',
+          parentId: 'original-parent-123'
+        })
+        .expect(201);
+    });
+
+    afterEach(async () => {
+      // Clean up test data
+      const session = neo4jService.getSession();
+      try {
+        await session.run('MATCH (c:Concept {id: $id}) DETACH DELETE c', {
+          id: testConceptId
+        });
+      } finally {
+        await session.close();
+      }
+    });
+
+    it('should update a concept with admin role', () => {
+      return request(app.getHttpServer())
+        .put(`/concepts/${testConceptId}`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send(validUpdateConceptDto)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body).toBeDefined();
+          expect(res.body.name).toBe('Updated Test Matter');
+          expect(res.body.type).toBe('Molecule');
+        });
+    });
+
+    it('should reject update request without admin role', () => {
+      return request(app.getHttpServer())
+        .put(`/concepts/${testConceptId}`)
+        .set('user', JSON.stringify(mockNonAdminUser))
+        .send(validUpdateConceptDto)
+        .expect(403); // Forbidden
+    });
+
+    it('should update concept with partial data', () => {
+      const partialUpdateDto = {
+        name: 'Partially Updated Name'
+      };
+
+      return request(app.getHttpServer())
+        .put(`/concepts/${testConceptId}`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send(partialUpdateDto)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.name).toBe('Partially Updated Name');
+        });
+    });
+
+    it('should handle concept not found error', () => {
+      return request(app.getHttpServer())
+        .put('/concepts/non-existent-concept-999')
+        .set('user', JSON.stringify(mockAdminUser))
+        .send(validUpdateConceptDto)
+        .expect(404)
+        .expect((res) => {
+          expect(res.body.message).toContain('not found');
+        });
+    });
+
+    it('should validate type field with enum values on update', () => {
+      const invalidUpdateDto = {
+        name: 'Updated Concept',
+        type: 'InvalidType' // Not in CONCEPT_TYPES enum
+      };
+
+      return request(app.getHttpServer())
+        .put(`/concepts/${testConceptId}`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send(invalidUpdateDto)
+        .expect(400)
+        .expect((res) => {
+          expect(res.body.message).toContain('Type must be one of: Matter, Molecule, Atom, Particle');
+        });
+    });
+
+    it('should validate name field length on update', () => {
+      const invalidUpdateDto = {
+        name: 'A' // Too short
+      };
+
+      return request(app.getHttpServer())
+        .put(`/concepts/${testConceptId}`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send(invalidUpdateDto)
+        .expect(400)
+        .expect((res) => {
+          expect(res.body.message).toContain('Name must be between 2 and 255 characters');
+        });
+    });
+
+    it('should handle removing parent relationship', () => {
+      const removeParentDto = {
+        name: 'Updated Name',
+        parentId: '' // Empty string to remove parent
+      };
+
+      return request(app.getHttpServer())
+        .put(`/concepts/${testConceptId}`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send(removeParentDto)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.name).toBe('Updated Name');
+        });
+    });
+
+    it('should handle invalid parent concept ID', () => {
+      const invalidParentDto = {
+        name: 'Updated Name',
+        parentId: 'non-existent-parent-999'
+      };
+
+      return request(app.getHttpServer())
+        .put(`/concepts/${testConceptId}`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send(invalidParentDto)
+        .expect(404)
+        .expect((res) => {
+          expect(res.body.message).toContain('Parent concept');
+          expect(res.body.message).toContain('does not exist');
+        });
+    });
+
+    it('should reject request without authentication', () => {
+      return request(app.getHttpServer())
+        .put(`/concepts/${testConceptId}`)
+        .send(validUpdateConceptDto)
+        .expect(401); // Unauthorized
+    });
+
+    it('should validate JSON payload format on update', () => {
+      return request(app.getHttpServer())
+        .put(`/concepts/${testConceptId}`)
+        .set('user', JSON.stringify(mockAdminUser))
+        .send('invalid json string')
+        .expect(400);
+    });
+
+    it('should update with all valid CONCEPT_TYPES enum values', async () => {
+      const conceptTypes = ['Matter', 'Molecule', 'Atom', 'Particle'];
+      
+      for (const conceptType of conceptTypes) {
+        const updateDto = {
+          name: `Updated ${conceptType}`,
+          type: conceptType
+        };
+
+        await request(app.getHttpServer())
+          .put(`/concepts/${testConceptId}`)
+          .set('user', JSON.stringify(mockAdminUser))
+          .send(updateDto)
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.type).toBe(conceptType);
+          });
+      }
+    });
+  });
+
+  describe('Authentication and Authorization for PUT', () => {
+    it('should check for @Roles("admin") decorator on PUT endpoint', async () => {
+      const testConceptId = 'auth-update-test-concept';
+      const updateDto = {
+        name: 'Auth Update Test',
+        type: 'Matter'
+      };
+
+      // First create a concept to update
+      await request(app.getHttpServer())
+        .post('/concepts')
+        .set('user', JSON.stringify(mockAdminUser))
+        .send({
+          id: testConceptId,
+          name: 'Original Auth Test',
+          type: 'Atom'
+        })
+        .expect(201);
+
+      try {
+        // Test with non-admin user should fail
+        await request(app.getHttpServer())
+          .put(`/concepts/${testConceptId}`)
+          .set('user', JSON.stringify(mockNonAdminUser))
+          .send(updateDto)
+          .expect(403);
+
+        // Test with admin user should succeed
+        await request(app.getHttpServer())
+          .put(`/concepts/${testConceptId}`)
+          .set('user', JSON.stringify(mockAdminUser))
+          .send(updateDto)
+          .expect(200);
+      } finally {
+        // Clean up
+        const session = neo4jService.getSession();
+        try {
+          await session.run('MATCH (c:SyllabusConcept {id: $id}) DETACH DELETE c', {
+            id: testConceptId
+          });
+        } finally {
+          await session.close();
+        }
+      }
+    });
+  });
 });
