@@ -1,29 +1,41 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConceptsController } from './concepts.controller';
 import { ConceptsService } from './concepts.service';
-import { Logger } from 'nestjs-pino';
+import { PinoLogger } from 'nestjs-pino';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { CreateConceptDto } from './dto/create-concept.dto';
 import { UpdateConceptDto } from './dto/update-concept.dto';
-import { ExecutionContext, NotFoundException } from '@nestjs/common';
+import { CreatePrerequisiteDto } from './dto/create-prerequisite.dto';
+import { ExecutionContext, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { LoggerUtil } from '../common/utils/logger.util';
 
 describe('ConceptsController', () => {
   let controller: ConceptsController;
   let conceptsService: ConceptsService;
-  let logger: Logger;
+  let logger: PinoLogger;
   let rolesGuard: RolesGuard;
 
   const mockConceptsService = {
     createConcept: jest.fn(),
     updateConcept: jest.fn(),
+    createPrerequisiteRelationship: jest.fn(),
   };
 
   const mockLogger = {
-    log: jest.fn(),
+    info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
+    debug: jest.fn(),
     setContext: jest.fn(),
+  };
+
+  // Spy on LoggerUtil methods
+  const loggerUtilSpy = {
+    logInfo: jest.spyOn(LoggerUtil, 'logInfo'),
+    logWarn: jest.spyOn(LoggerUtil, 'logWarn'),
+    logError: jest.spyOn(LoggerUtil, 'logError'),
+    logDebug: jest.spyOn(LoggerUtil, 'logDebug'),
   };
 
   beforeEach(async () => {
@@ -35,7 +47,7 @@ describe('ConceptsController', () => {
           useValue: mockConceptsService,
         },
         {
-          provide: Logger,
+          provide: PinoLogger,
           useValue: mockLogger,
         },
         {
@@ -49,12 +61,14 @@ describe('ConceptsController', () => {
 
     controller = module.get<ConceptsController>(ConceptsController);
     conceptsService = module.get<ConceptsService>(ConceptsService);
-    logger = module.get<Logger>(Logger);
+    logger = module.get<PinoLogger>(PinoLogger);
     rolesGuard = module.get<RolesGuard>(RolesGuard);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    // Clear LoggerUtil spies
+    Object.values(loggerUtilSpy).forEach(spy => spy.mockClear());
   });
 
   it('should be defined', () => {
@@ -99,9 +113,17 @@ describe('ConceptsController', () => {
         validCreateConceptDto,
         'admin-123'
       );
-      expect(logger.log).toHaveBeenCalledWith(
-        `Creating concept with data: ${JSON.stringify(validCreateConceptDto)} by admin-123`,
-        ConceptsController.name
+      expect(loggerUtilSpy.logInfo).toHaveBeenCalledWith(
+        expect.any(Object),
+        'ConceptsController',
+        'Creating concept',
+        {
+          conceptId: validCreateConceptDto.id,
+          name: validCreateConceptDto.name,
+          type: validCreateConceptDto.type,
+          parentId: validCreateConceptDto.parentId,
+          adminId: 'admin-123'
+        }
       );
       expect(result).toEqual(mockCreatedConcept);
     });
@@ -121,9 +143,17 @@ describe('ConceptsController', () => {
         conceptWithoutParent,
         'admin-123'
       );
-      expect(logger.log).toHaveBeenCalledWith(
-        `Creating concept with data: ${JSON.stringify(conceptWithoutParent)} by admin-123`,
-        ConceptsController.name
+      expect(loggerUtilSpy.logInfo).toHaveBeenCalledWith(
+        expect.any(Object),
+        'ConceptsController',
+        'Creating concept',
+        {
+          conceptId: conceptWithoutParent.id,
+          name: conceptWithoutParent.name,
+          type: conceptWithoutParent.type,
+          parentId: conceptWithoutParent.parentId,
+          adminId: 'admin-123'
+        }
       );
       expect(result).toEqual(mockCreatedConcept);
     });
@@ -140,9 +170,17 @@ describe('ConceptsController', () => {
         validCreateConceptDto,
         'admin-123'
       );
-      expect(logger.log).toHaveBeenCalledWith(
-        `Creating concept with data: ${JSON.stringify(validCreateConceptDto)} by admin-123`,
-        ConceptsController.name
+      expect(loggerUtilSpy.logInfo).toHaveBeenCalledWith(
+        expect.any(Object),
+        'ConceptsController',
+        'Creating concept',
+        {
+          conceptId: validCreateConceptDto.id,
+          name: validCreateConceptDto.name,
+          type: validCreateConceptDto.type,
+          parentId: validCreateConceptDto.parentId,
+          adminId: 'admin-123'
+        }
       );
     });
 
@@ -192,9 +230,17 @@ describe('ConceptsController', () => {
         validCreateConceptDto,
         'admin-999'
       );
-      expect(logger.log).toHaveBeenCalledWith(
-        `Creating concept with data: ${JSON.stringify(validCreateConceptDto)} by admin-999`,
-        ConceptsController.name
+      expect(loggerUtilSpy.logInfo).toHaveBeenCalledWith(
+        expect.any(Object),
+        'ConceptsController',
+        'Creating concept',
+        {
+          conceptId: validCreateConceptDto.id,
+          name: validCreateConceptDto.name,
+          type: validCreateConceptDto.type,
+          parentId: validCreateConceptDto.parentId,
+          adminId: 'admin-999'
+        }
       );
     });
 
@@ -210,9 +256,17 @@ describe('ConceptsController', () => {
 
       await controller.create(detailedConceptDto, mockRequest);
 
-      expect(logger.log).toHaveBeenCalledWith(
-        `Creating concept with data: ${JSON.stringify(detailedConceptDto)} by admin-123`,
-        ConceptsController.name
+      expect(loggerUtilSpy.logInfo).toHaveBeenCalledWith(
+        expect.any(Object),
+        'ConceptsController',
+        'Creating concept',
+        {
+          conceptId: detailedConceptDto.id,
+          name: detailedConceptDto.name,
+          type: detailedConceptDto.type,
+          parentId: detailedConceptDto.parentId,
+          adminId: 'admin-123'
+        }
       );
     });
   });
@@ -230,6 +284,11 @@ describe('ConceptsController', () => {
 
     it('should require admin role for update method', () => {
       const roles = Reflect.getMetadata('roles', controller.update);
+      expect(roles).toContain('admin');
+    });
+
+    it('should require admin role for createPrerequisite method', () => {
+      const roles = Reflect.getMetadata('roles', controller.createPrerequisite);
       expect(roles).toContain('admin');
     });
   });
@@ -362,6 +421,442 @@ describe('ConceptsController', () => {
         'admin-123'
       );
       expect(result).toEqual(mockUpdatedConcept);
+    });
+  });
+
+  describe('POST /concepts/:id/prerequisites', () => {
+    const mockRequest = {
+      user: { id: 'admin-123', role: ['admin'] }
+    } as any;
+
+    const validPrerequisiteDto: CreatePrerequisiteDto = {
+      prerequisiteId: 'prerequisite-123'
+    };
+
+    const mockSuccessResponse = {
+      message: 'Prerequisite relationship created successfully'
+    };
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      Object.values(loggerUtilSpy).forEach(spy => spy.mockClear());
+    });
+
+    describe('Successful prerequisite creation', () => {
+      it('should successfully create a prerequisite relationship', async () => {
+        mockConceptsService.createPrerequisiteRelationship.mockResolvedValue(mockSuccessResponse);
+
+        const result = await controller.createPrerequisite('concept-123', validPrerequisiteDto, mockRequest);
+
+        expect(conceptsService.createPrerequisiteRelationship).toHaveBeenCalledWith(
+          'concept-123',
+          'prerequisite-123',
+          'admin-123'
+        );
+        expect(result).toEqual(mockSuccessResponse);
+      });
+
+      it('should log prerequisite creation request', async () => {
+        mockConceptsService.createPrerequisiteRelationship.mockResolvedValue(mockSuccessResponse);
+
+        await controller.createPrerequisite('concept-123', validPrerequisiteDto, mockRequest);
+
+        expect(loggerUtilSpy.logInfo).toHaveBeenCalledWith(
+          expect.any(Object),
+          'ConceptsController',
+          'Creating prerequisite relationship',
+          {
+            conceptId: 'concept-123',
+            prerequisiteId: 'prerequisite-123',
+            adminId: 'admin-123'
+          }
+        );
+      });
+
+      it('should log successful prerequisite creation', async () => {
+        mockConceptsService.createPrerequisiteRelationship.mockResolvedValue(mockSuccessResponse);
+
+        await controller.createPrerequisite('concept-123', validPrerequisiteDto, mockRequest);
+
+        expect(loggerUtilSpy.logInfo).toHaveBeenCalledWith(
+          expect.any(Object),
+          'ConceptsController',
+          'Prerequisite relationship created successfully',
+          {
+            conceptId: 'concept-123',
+            prerequisiteId: 'prerequisite-123',
+            adminId: 'admin-123'
+          }
+        );
+      });
+
+      it('should call service with correct parameters for different admin', async () => {
+        const requestWithDifferentAdmin = {
+          user: { id: 'admin-999', role: ['admin'] }
+        } as any;
+
+        mockConceptsService.createPrerequisiteRelationship.mockResolvedValue(mockSuccessResponse);
+
+        await controller.createPrerequisite('concept-456', validPrerequisiteDto, requestWithDifferentAdmin);
+
+        expect(conceptsService.createPrerequisiteRelationship).toHaveBeenCalledWith(
+          'concept-456',
+          'prerequisite-123',
+          'admin-999'
+        );
+
+        expect(loggerUtilSpy.logInfo).toHaveBeenCalledWith(
+          expect.any(Object),
+          'ConceptsController',
+          'Creating prerequisite relationship',
+          {
+            conceptId: 'concept-456',
+            prerequisiteId: 'prerequisite-123',
+            adminId: 'admin-999'
+          }
+        );
+      });
+
+      it('should handle different prerequisite IDs', async () => {
+        const customPrerequisiteDto: CreatePrerequisiteDto = {
+          prerequisiteId: 'custom-prerequisite-456'
+        };
+
+        mockConceptsService.createPrerequisiteRelationship.mockResolvedValue(mockSuccessResponse);
+
+        const result = await controller.createPrerequisite('concept-789', customPrerequisiteDto, mockRequest);
+
+        expect(conceptsService.createPrerequisiteRelationship).toHaveBeenCalledWith(
+          'concept-789',
+          'custom-prerequisite-456',
+          'admin-123'
+        );
+        expect(result).toEqual(mockSuccessResponse);
+      });
+    });
+
+    describe('Input validation', () => {
+      it('should throw BadRequestException when concept ID is empty', async () => {
+        await expect(
+          controller.createPrerequisite('', validPrerequisiteDto, mockRequest)
+        ).rejects.toThrow(BadRequestException);
+        
+        await expect(
+          controller.createPrerequisite('', validPrerequisiteDto, mockRequest)
+        ).rejects.toThrow('Concept ID cannot be empty');
+
+        expect(conceptsService.createPrerequisiteRelationship).not.toHaveBeenCalled();
+      });
+
+      it('should throw BadRequestException when concept ID is whitespace only', async () => {
+        await expect(
+          controller.createPrerequisite('   ', validPrerequisiteDto, mockRequest)
+        ).rejects.toThrow(BadRequestException);
+        
+        await expect(
+          controller.createPrerequisite('   ', validPrerequisiteDto, mockRequest)
+        ).rejects.toThrow('Concept ID cannot be empty');
+
+        expect(conceptsService.createPrerequisiteRelationship).not.toHaveBeenCalled();
+      });
+
+      it('should throw BadRequestException when concept ID is undefined/null', async () => {
+        await expect(
+          controller.createPrerequisite(null as any, validPrerequisiteDto, mockRequest)
+        ).rejects.toThrow(BadRequestException);
+
+        await expect(
+          controller.createPrerequisite(undefined as any, validPrerequisiteDto, mockRequest)
+        ).rejects.toThrow(BadRequestException);
+
+        expect(conceptsService.createPrerequisiteRelationship).not.toHaveBeenCalled();
+      });
+
+      it('should accept valid concept IDs with various formats', async () => {
+        const validIds = [
+          'concept-123',
+          'CONCEPT_456',
+          'concept.789',
+          'concept@test',
+          '123-concept-test'
+        ];
+
+        mockConceptsService.createPrerequisiteRelationship.mockResolvedValue(mockSuccessResponse);
+
+        for (const conceptId of validIds) {
+          await controller.createPrerequisite(conceptId, validPrerequisiteDto, mockRequest);
+          
+          expect(conceptsService.createPrerequisiteRelationship).toHaveBeenCalledWith(
+            conceptId,
+            'prerequisite-123',
+            'admin-123'
+          );
+        }
+
+        expect(conceptsService.createPrerequisiteRelationship).toHaveBeenCalledTimes(validIds.length);
+      });
+    });
+
+    describe('Error handling and logging', () => {
+      it('should handle and log NotFoundException from service', async () => {
+        const notFoundError = new NotFoundException('Concept with ID concept-123 not found.');
+        mockConceptsService.createPrerequisiteRelationship.mockRejectedValue(notFoundError);
+
+        await expect(
+          controller.createPrerequisite('concept-123', validPrerequisiteDto, mockRequest)
+        ).rejects.toThrow(NotFoundException);
+
+        await expect(
+          controller.createPrerequisite('concept-123', validPrerequisiteDto, mockRequest)
+        ).rejects.toThrow('Concept with ID concept-123 not found.');
+
+        expect(loggerUtilSpy.logError).toHaveBeenCalledWith(
+          expect.any(Object),
+          'ConceptsController',
+          'Failed to create prerequisite relationship',
+          notFoundError,
+          {
+            conceptId: 'concept-123',
+            prerequisiteId: 'prerequisite-123',
+            adminId: 'admin-123'
+          }
+        );
+      });
+
+      it('should handle and log prerequisite concept not found error', async () => {
+        const prerequisiteNotFoundError = new NotFoundException('Prerequisite concept with ID prerequisite-123 not found.');
+        mockConceptsService.createPrerequisiteRelationship.mockRejectedValue(prerequisiteNotFoundError);
+
+        await expect(
+          controller.createPrerequisite('concept-123', validPrerequisiteDto, mockRequest)
+        ).rejects.toThrow(NotFoundException);
+
+        expect(loggerUtilSpy.logError).toHaveBeenCalledWith(
+          expect.any(Object),
+          'ConceptsController',
+          'Failed to create prerequisite relationship',
+          prerequisiteNotFoundError,
+          {
+            conceptId: 'concept-123',
+            prerequisiteId: 'prerequisite-123',
+            adminId: 'admin-123'
+          }
+        );
+      });
+
+      it('should handle and log BadRequestException for duplicate relationship', async () => {
+        const duplicateError = new BadRequestException('Prerequisite relationship already exists between concept-123 and prerequisite-123.');
+        mockConceptsService.createPrerequisiteRelationship.mockRejectedValue(duplicateError);
+
+        await expect(
+          controller.createPrerequisite('concept-123', validPrerequisiteDto, mockRequest)
+        ).rejects.toThrow(BadRequestException);
+
+        await expect(
+          controller.createPrerequisite('concept-123', validPrerequisiteDto, mockRequest)
+        ).rejects.toThrow('Prerequisite relationship already exists between concept-123 and prerequisite-123.');
+
+        expect(loggerUtilSpy.logError).toHaveBeenCalledWith(
+          expect.any(Object),
+          'ConceptsController',
+          'Failed to create prerequisite relationship',
+          duplicateError,
+          {
+            conceptId: 'concept-123',
+            prerequisiteId: 'prerequisite-123',
+            adminId: 'admin-123'
+          }
+        );
+      });
+
+      it('should handle and log BadRequestException for circular dependency', async () => {
+        const circularError = new BadRequestException('Creating this prerequisite would result in a circular dependency.');
+        mockConceptsService.createPrerequisiteRelationship.mockRejectedValue(circularError);
+
+        await expect(
+          controller.createPrerequisite('concept-123', validPrerequisiteDto, mockRequest)
+        ).rejects.toThrow(BadRequestException);
+
+        expect(loggerUtilSpy.logError).toHaveBeenCalledWith(
+          expect.any(Object),
+          'ConceptsController',
+          'Failed to create prerequisite relationship',
+          circularError,
+          {
+            conceptId: 'concept-123',
+            prerequisiteId: 'prerequisite-123',
+            adminId: 'admin-123'
+          }
+        );
+      });
+
+      it('should handle and log generic service errors', async () => {
+        const genericError = new Error('Database connection failed');
+        mockConceptsService.createPrerequisiteRelationship.mockRejectedValue(genericError);
+
+        await expect(
+          controller.createPrerequisite('concept-123', validPrerequisiteDto, mockRequest)
+        ).rejects.toThrow('Database connection failed');
+
+        expect(loggerUtilSpy.logError).toHaveBeenCalledWith(
+          expect.any(Object),
+          'ConceptsController',
+          'Failed to create prerequisite relationship',
+          genericError,
+          {
+            conceptId: 'concept-123',
+            prerequisiteId: 'prerequisite-123',
+            adminId: 'admin-123'
+          }
+        );
+      });
+
+      it('should handle and log internal server errors', async () => {
+        const internalError = new Error('Neo4j connection timeout');
+        mockConceptsService.createPrerequisiteRelationship.mockRejectedValue(internalError);
+
+        await expect(
+          controller.createPrerequisite('concept-123', validPrerequisiteDto, mockRequest)
+        ).rejects.toThrow('Neo4j connection timeout');
+
+        expect(conceptsService.createPrerequisiteRelationship).toHaveBeenCalledWith(
+          'concept-123',
+          'prerequisite-123',
+          'admin-123'
+        );
+
+        expect(loggerUtilSpy.logError).toHaveBeenCalledWith(
+          expect.any(Object),
+          'ConceptsController',
+          'Failed to create prerequisite relationship',
+          internalError,
+          {
+            conceptId: 'concept-123',
+            prerequisiteId: 'prerequisite-123',
+            adminId: 'admin-123'
+          }
+        );
+      });
+
+      it('should propagate error after logging', async () => {
+        const customError = new Error('Custom service error');
+        mockConceptsService.createPrerequisiteRelationship.mockRejectedValue(customError);
+
+        let caughtError: any;
+        try {
+          await controller.createPrerequisite('concept-123', validPrerequisiteDto, mockRequest);
+        } catch (error) {
+          caughtError = error;
+        }
+
+        expect(caughtError).toBe(customError);
+        expect(loggerUtilSpy.logError).toHaveBeenCalled();
+      });
+    });
+
+    describe('Authentication and authorization context', () => {
+      it('should extract admin ID from complex user object', async () => {
+        const complexUserRequest = {
+          user: {
+            id: 'admin-complex-123',
+            role: ['admin', 'user'],
+            email: 'admin@example.com',
+            name: 'Admin User',
+            permissions: ['create', 'read', 'update', 'delete']
+          }
+        } as any;
+
+        mockConceptsService.createPrerequisiteRelationship.mockResolvedValue(mockSuccessResponse);
+
+        await controller.createPrerequisite('concept-123', validPrerequisiteDto, complexUserRequest);
+
+        expect(conceptsService.createPrerequisiteRelationship).toHaveBeenCalledWith(
+          'concept-123',
+          'prerequisite-123',
+          'admin-complex-123'
+        );
+
+        expect(loggerUtilSpy.logInfo).toHaveBeenCalledWith(
+          expect.any(Object),
+          'ConceptsController',
+          'Creating prerequisite relationship',
+          {
+            conceptId: 'concept-123',
+            prerequisiteId: 'prerequisite-123',
+            adminId: 'admin-complex-123'
+          }
+        );
+      });
+
+      it('should handle different admin ID formats', async () => {
+        const adminIdFormats = [
+          'admin-123',
+          'ADMIN_456',
+          'admin.test@domain.com',
+          '00000000-0000-0000-0000-000000000000',
+          'admin-user-789-test'
+        ];
+
+        mockConceptsService.createPrerequisiteRelationship.mockResolvedValue(mockSuccessResponse);
+
+        for (const adminId of adminIdFormats) {
+          const requestWithCustomAdminId = {
+            user: { id: adminId, role: ['admin'] }
+          } as any;
+
+          await controller.createPrerequisite('concept-123', validPrerequisiteDto, requestWithCustomAdminId);
+
+          expect(conceptsService.createPrerequisiteRelationship).toHaveBeenCalledWith(
+            'concept-123',
+            'prerequisite-123',
+            adminId
+          );
+        }
+      });
+    });
+
+    describe('Endpoint behavior verification', () => {
+      it('should call service method with exact parameters', async () => {
+        mockConceptsService.createPrerequisiteRelationship.mockResolvedValue(mockSuccessResponse);
+
+        await controller.createPrerequisite('test-concept', validPrerequisiteDto, mockRequest);
+
+        expect(conceptsService.createPrerequisiteRelationship).toHaveBeenCalledTimes(1);
+        expect(conceptsService.createPrerequisiteRelationship).toHaveBeenCalledWith(
+          'test-concept',
+          'prerequisite-123',
+          'admin-123'
+        );
+      });
+
+      it('should return service response unchanged', async () => {
+        const customResponse = {
+          message: 'Prerequisite relationship created successfully',
+          relationshipId: 'rel-123',
+          createdAt: new Date().toISOString()
+        };
+
+        mockConceptsService.createPrerequisiteRelationship.mockResolvedValue(customResponse);
+
+        const result = await controller.createPrerequisite('concept-123', validPrerequisiteDto, mockRequest);
+
+        expect(result).toEqual(customResponse);
+        expect(result).toBe(customResponse); // Should be exact same object reference
+      });
+
+      it('should handle async operation correctly', async () => {
+        // Simulate async delay
+        mockConceptsService.createPrerequisiteRelationship.mockImplementation(() =>
+          new Promise(resolve => setTimeout(() => resolve(mockSuccessResponse), 10))
+        );
+
+        const startTime = Date.now();
+        const result = await controller.createPrerequisite('concept-123', validPrerequisiteDto, mockRequest);
+        const endTime = Date.now();
+
+        expect(endTime - startTime).toBeGreaterThanOrEqual(10);
+        expect(result).toEqual(mockSuccessResponse);
+      });
     });
   });
 });

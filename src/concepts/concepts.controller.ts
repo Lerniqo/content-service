@@ -2,6 +2,7 @@ import { Body, Controller, Post, Put, Param, Req, UseGuards, HttpCode, HttpStatu
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateConceptDto } from './dto/create-concept.dto';
 import { UpdateConceptDto } from './dto/update-concept.dto';
+import { CreatePrerequisiteDto } from './dto/create-prerequisite.dto';
 import { ConceptsService } from './concepts.service';
 import { PinoLogger } from 'nestjs-pino';
 import { RolesGuard } from '../auth/roles/roles.guard';
@@ -163,6 +164,105 @@ export class ConceptsController {
                 'Failed to update concept',
                 error,
                 { conceptId: id, adminId }
+            );
+            throw error;
+        }
+    }
+
+    @Post(':id/prerequisites')
+    @HttpCode(HttpStatus.OK)
+    @Roles('admin')
+    @ApiOperation({ 
+        summary: 'Create a prerequisite relationship',
+        description: 'Creates a HAS_PREREQUISITE relationship from one concept to another. Admin role required.'
+    })
+    @ApiParam({
+        name: 'id',
+        description: 'The unique identifier of the concept that will have the prerequisite',
+        example: 'concept-123'
+    })
+    @ApiBody({
+        type: CreatePrerequisiteDto,
+        description: 'The prerequisite concept data'
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Prerequisite relationship created successfully',
+        schema: {
+            type: 'object',
+            properties: {
+                message: { 
+                    type: 'string', 
+                    example: 'Prerequisite relationship created successfully' 
+                }
+            }
+        }
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Bad Request - Invalid input data or missing prerequisiteId'
+    })
+    @ApiResponse({
+        status: 401,
+        description: 'Unauthorized - Authentication required'
+    })
+    @ApiResponse({
+        status: 403,
+        description: 'Forbidden - Admin role required'
+    })
+    @ApiResponse({
+        status: 404,
+        description: 'Not Found - One or both concepts not found'
+    })
+    @ApiResponse({
+        status: 500,
+        description: 'Internal Server Error - Relationship creation failed'
+    })
+    async createPrerequisite(
+        @Param('id') id: string,
+        @Body() createPrerequisiteDto: CreatePrerequisiteDto,
+        @Req() req: AuthenticatedRequest
+    ) {
+        // Validate the ID parameter
+        if (!id || id.trim().length === 0) {
+            throw new BadRequestException('Concept ID cannot be empty');
+        }
+
+        const adminId = req.user.id;
+        
+        LoggerUtil.logInfo(
+            this.logger,
+            'ConceptsController',
+            'Creating prerequisite relationship',
+            {
+                conceptId: id,
+                prerequisiteId: createPrerequisiteDto.prerequisiteId,
+                adminId
+            }
+        );
+
+        try {
+            const result = await this.conceptsService.createPrerequisiteRelationship(
+                id, 
+                createPrerequisiteDto.prerequisiteId, 
+                adminId
+            );
+            
+            LoggerUtil.logInfo(
+                this.logger,
+                'ConceptsController',
+                'Prerequisite relationship created successfully',
+                { conceptId: id, prerequisiteId: createPrerequisiteDto.prerequisiteId, adminId }
+            );
+            
+            return result;
+        } catch (error) {
+            LoggerUtil.logError(
+                this.logger,
+                'ConceptsController',
+                'Failed to create prerequisite relationship',
+                error,
+                { conceptId: id, prerequisiteId: createPrerequisiteDto.prerequisiteId, adminId }
             );
             throw error;
         }
