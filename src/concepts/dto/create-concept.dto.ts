@@ -1,5 +1,5 @@
-import { Concept, CONCEPT_TYPES } from "src/libs/shared-types";
-import type { ConceptType } from "src/libs/shared-types";
+import { Concept, CONCEPT_TYPES } from "../../libs/shared-types";
+import type { ConceptType } from "../../libs/shared-types";
 import { ApiProperty } from "@nestjs/swagger";
 import { IsString, IsNotEmpty, IsIn, Length, IsOptional } from "class-validator";
 

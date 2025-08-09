@@ -1,8 +1,8 @@
 import { Logger } from "nestjs-pino";
 import { Injectable } from "@nestjs/common";
-import { Neo4jService } from "src/common/neo4j/neo4j.service";
+import { Neo4jService } from "../common/neo4j/neo4j.service";
 import { CreateConceptDto } from "./dto/create-concept.dto";
-import { Concept } from "src/libs/shared-types/graph-model";
+import { Concept } from "../libs/shared-types/graph-model";
 
 @Injectable()
 export class ConceptsService {
