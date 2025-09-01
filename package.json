@@ -18,7 +18,14 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e-fixed.json --forceExit",
-    "test:e2e:simple": "jest test/app.e2e-spec.ts test/concepts-simple.e2e-spec.ts test/health.e2e-spec.ts --config ./test/jest-e2e-fixed.json --forceExit"
+    "test:e2e:simple": "jest test/app.e2e-spec.ts test/concepts-simple.e2e-spec.ts test/health.e2e-spec.ts --config ./test/jest-e2e-fixed.json --forceExit",
+    "setup": "ts-node setup/index.ts",
+    "setup:seed": "ts-node setup/index.ts run",
+    "setup:clean": "ts-node setup/index.ts run cleanup-database",
+    "setup:import-graph": "ts-node setup/index.ts run import-concepts-graph",
+    "setup:query-graph": "ts-node setup/index.ts run query-imported-concepts",
+    "setup:validate": "ts-node setup/index.ts run validate-data",
+    "setup:validate-graph": "ts-node setup/index.ts run validate-imported-graph"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -28,6 +35,7 @@
     "@nestjs/swagger": "^11.2.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "dotenv": "^17.2.1",
     "neo4j-driver": "^5.28.1",
     "nestjs-pino": "^4.4.0",
     "pino-http": "^10.5.0",

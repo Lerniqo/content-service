@@ -1,0 +1,124 @@
+
+2. Content Service
+Purpose: The Content Service acts as the central library and the "brain" of the platform. It
+uses a graph database to model the entire Mathematics syllabus, manage all learning
+resources, and track the knowledge state of every student.
+Graph Database Structure (Neo4j):
+A graph database is chosen for its unparalleled ability to represent and query complex,
+interconnected data. This is perfect for mapping the relationships between syllabus concepts,
+learning materials, and student progress.
+
+Nodes (The Entities)
+●​ SyllabusConcept: Represents a concept (e.g., "Pythagorean Theorem"). Properties:
+conceptId, name, type (Particle, Atom, etc.), description.
+●​ Resource: Represents learning material. Properties: resourceId, type (Video, Notes), url,
+title, price.
+●​ Question: Represents a single question. Properties: questionId, text, difficulty.
+●​ Quiz: A collection of questions. Properties: quizId, title.
+●​ Student: Anonymized student representation. Properties: userId.
+●​ Teacher: Teacher representation. Properties: userId.
+
+Relationships (The Connections)
+●​ [:CONTAINS]: Links parent concepts to child concepts.
+●​ [:HAS_PREREQUISITE]: Defines which concepts are foundational for others. This is not a
+strict sequence, but is used by the AI to suggest prerequisite material when a student
+struggles with a more advanced topic.
+●​ [:EXPLAINS]: Links a resource to a concept.
+●​ [:TESTS]: Links a question to a concept.
+●​ [:INCLUDES]: Links a quiz to its questions.
+●​ [:PUBLISHED]: Links a teacher to a resource they created.
+●​ [:HAS_MASTERED]: Links a student to a concept they've learned.
+
+●​ [:ATTEMPTED_QUIZ]: Links a student to a quiz they've taken.
+API Endpoints:
+The Content Service provides endpoints for managing and retrieving data from the knowledge
+graph. Authentication is verified via the access_token provided by the User Service.
+
+Syllabus Management (Admin Only)
+●​ POST /api/content/concepts
+○​ Description: Creates a new syllabus concept.
+○​ Request Body:​
+{​
+"name": "Linear Equations",​
+"type": "Molecule",​
+"description": "Solving equations of the form ax + b = c.",​
+"parentId": "algebra-matter-id"​
+}​
+○​ Success Response (201 Created): Returns the newly created concept object.
+●​ PUT /api/content/concepts/{id}
+○​ Description: Updates an existing syllabus concept.
+○​ Request Body: Fields to update (e.g., name, description).
+○​ Success Response (200 OK): Returns the updated concept object.
+●​ POST /api/content/concepts/{id}/prerequisites
+○​ Description: Adds a prerequisite relationship to a concept.
+○​ Request Body:​
+{​
+"prerequisiteId": "basic-algebra-id"​
+}​
+○​ Success Response (200 OK): { "message": "Prerequisite added." }
+
+Resource Management
+●​ POST /api/content/resources
+○​ Description: Creates a new resource and links it to a concept.
+○​ Permissions: Teacher, Admin.
+○​ Request Body:​
+{​
+"title": "Intro to Pythagoras Video",​
+"type": "Video",​
+"url": "https://cdn.example.com/video.mp4",​
+"price": 0,​
+"conceptId": "pythagoras-theorem-id"​
+}​
+
+○​ Success Response (201 Created): Returns the new resource object.
+●​ PUT /api/content/resources/{id}
+○​ Description: Updates a resource's details.
+○​ Permissions: Owner Teacher, Admin.
+○​ Request Body: Fields to update (e.g., title, price).
+○​ Success Response (200 OK): Returns the updated resource object.
+●​ DELETE /api/content/resources/{id}
+○​ Description: Deletes a resource.
+○​ Permissions: Owner Teacher, Admin.
+○​ Success Response (204 No Content): Empty response.
+
+Content Retrieval
+●​ GET /api/content/syllabus
+○​ Description: Retrieves the entire syllabus structure, nested by hierarchy.
+○​ Permissions: Public.
+○​ Success Response (200 OK): A tree-like JSON object representing the syllabus.
+●​ GET /api/content/concepts/{id}
+○​ Description: Retrieves a specific concept, its prerequisites, and associated
+resources.
+○​ Permissions: Public.
+○​ Success Response (200 OK):​
+{​
+"conceptId": "pythagoras-theorem-id",​
+"name": "Pythagorean Theorem",​
+"prerequisites": [ { "conceptId": "...", "name": "..." } ],​
+"resources": [ { "resourceId": "...", "title": "...", "type": "Video" } ]​
+}​
+●​ GET /api/content/quizzes/{id}
+○​ Description: Retrieves a specific quiz and its questions.
+○​ Permissions: Authenticated User.
+○​ Success Response (200 OK): A quiz object containing an array of question
+objects.
+
+Student Knowledge
+●​ GET /api/content/me/learning-path
+○​ Description: Retrieves the personalized learning path for the authenticated
+student.
+○​ Permissions: Authenticated Student.
+○​ Success Response (200 OK):​
+{​
+"recommendedNext": {​
+"conceptId": "...",​
+
+"name": "Next Concept to Learn"​
+},​
+"masteredConcepts": [​
+{ "conceptId": "...", "name": "...", "masteryScore": 0.98 }​
+],​
+"inProgressConcepts": [​
+{ "conceptId": "...", "name": "...", "masteryScore": 0.65 }​
+]​
+}​
