@@ -11,8 +11,6 @@ const driver = neo4j.driver(
   }
 );
 
-
-
 async function populateDatabase() {
   const session = driver.session();
   const currentTime = neo4j.types.DateTime.fromStandardDate(new Date());
@@ -132,15 +130,13 @@ async function populateDatabase() {
                       conceptId: uuidv4(),
                       name: "equivalent-fractions-decimals-percents (PAR007)",
                       type: "Particle",
-                      description:
-                        "Converting between fractions, decimals, and percents",
+                      description: "Converting between fractions, decimals, and percents",
                     },
                     {
                       conceptId: uuidv4(),
                       name: "fraction-decimals-percents (PAR008)",
                       type: "Particle",
-                      description:
-                        "Relationships between fractions, decimals, and percents",
+                      description: "Relationships between fractions, decimals, and percents",
                     },
                   ],
                 },
@@ -265,6 +261,1026 @@ async function populateDatabase() {
                       name: "divide-decimals (PAR018)",
                       type: "Particle",
                       description: "Rules for dividing decimals",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Whole Numbers (MOL004)",
+              type: "Molecule",
+              description: "Operations with whole numbers",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Basic Operations (ATM012)",
+                  type: "Atom",
+                  description: "Fundamental operations with whole numbers",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "addition (PAR019)",
+                      type: "Particle",
+                      description: "Adding whole numbers",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "application: multi-column addition (PAR020)",
+                      type: "Particle",
+                      description: "Multi-column addition techniques",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "subtraction (PAR021)",
+                      type: "Particle",
+                      description: "Subtracting whole numbers",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "application: multi-column subtraction (PAR022)",
+                      type: "Particle",
+                      description: "Multi-column subtraction techniques",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "multiplication (PAR023)",
+                      type: "Particle",
+                      description: "Multiplying whole numbers",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "application: simple multiplication (PAR024)",
+                      type: "Particle",
+                      description: "Simple multiplication applications",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "division (PAR025)",
+                      type: "Particle",
+                      description: "Dividing whole numbers",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Order of Operations (ATM013)",
+                  type: "Atom",
+                  description: "Applying order of operations",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "order-of-operations (PAR026)",
+                      type: "Particle",
+                      description: "Rules for order of operations",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "application: order of operations (PAR027)",
+                      type: "Particle",
+                      description: "Practical applications of order of operations",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Indices (MOL005)",
+              type: "Molecule",
+              description: "Understanding indices and exponents",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Exponents (ATM014)",
+                  type: "Atom",
+                  description: "Properties and operations with exponents",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "exponents (PAR028)",
+                      type: "Particle",
+                      description: "Rules for working with exponents",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "scientific-notation (PAR029)",
+                      type: "Particle",
+                      description: "Using scientific notation",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Square Roots (ATM015)",
+                  type: "Atom",
+                  description: "Calculating and understanding square roots",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "square-root (PAR030)",
+                      type: "Particle",
+                      description: "Properties of square roots",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Number Patterns (MOL006)",
+              type: "Molecule",
+              description: "Identifying and analyzing number patterns",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Identifying Patterns (ATM016)",
+                  type: "Atom",
+                  description: "Techniques for finding number patterns",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "pattern-finding (PAR031)",
+                      type: "Particle",
+                      description: "Methods for identifying number patterns",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "p-patterns-relations-algebra (PAR032)",
+                      type: "Particle",
+                      description: "Patterns and their relation to algebra",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Integers (MOL007)",
+              type: "Molecule",
+              description: "Operations with integers",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Operations with Integers (ATM017)",
+                  type: "Atom",
+                  description: "Performing operations with integers",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "integers (PAR033)",
+                      type: "Particle",
+                      description: "Properties of integers",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "multiplying-positive-negative-numbers (PAR034)",
+                      type: "Particle",
+                      description: "Rules for multiplying positive and negative numbers",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Real Numbers (MOL008)",
+              type: "Molecule",
+              description: "Understanding real numbers",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Number Line Operations (ATM018)",
+                  type: "Atom",
+                  description: "Operations using the number line",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "number-line (PAR035)",
+                      type: "Particle",
+                      description: "Using the number line for operations",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "interpreting-numberline (PAR036)",
+                      type: "Particle",
+                      description: "Interpreting numbers on the number line",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "ordering-numbers (PAR037)",
+                      type: "Particle",
+                      description: "Ordering numbers on the number line",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Ratio and Proportion (MOL009)",
+              type: "Molecule",
+              description: "Understanding ratios and proportions",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Proportions (ATM019)",
+                  type: "Atom",
+                  description: "Working with proportions",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "proportion (PAR038)",
+                      type: "Particle",
+                      description: "Concepts of proportions",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Divisibility (ATM020)",
+                  type: "Atom",
+                  description: "Rules and properties of divisibility",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "divisibility (PAR039)",
+                      type: "Particle",
+                      description: "Rules for divisibility",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "prime-number (PAR040)",
+                      type: "Particle",
+                      description: "Understanding prime numbers",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "least-common-multiple (PAR041)",
+                      type: "Particle",
+                      description: "Finding the least common multiple",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Number Sense (MOL010)",
+              type: "Molecule",
+              description: "Developing number sense",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Rounding (ATM021)",
+                  type: "Atom",
+                  description: "Techniques for rounding numbers",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "rounding (PAR042)",
+                      type: "Particle",
+                      description: "Rules for rounding numbers",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Simple Calculations (ATM022)",
+                  type: "Atom",
+                  description: "Performing simple calculations",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "simple-calculation (PAR043)",
+                      type: "Particle",
+                      description: "Basic calculation techniques",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          conceptId: uuidv4(),
+          name: "Measurements (MAT002)",
+          type: "Matter",
+          description: "Concepts of measurement",
+          molecules: [
+            {
+              conceptId: uuidv4(),
+              name: "Area of Plane Figures (MOL011)",
+              type: "Molecule",
+              description: "Calculating areas of plane figures",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Area Calculations (ATM023)",
+                  type: "Atom",
+                  description: "Methods for calculating areas",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "area (PAR044)",
+                      type: "Particle",
+                      description: "General area calculations",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "area-concept (PAR045)",
+                      type: "Particle",
+                      description: "Understanding the concept of area",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "area-of-circle (PAR046)",
+                      type: "Particle",
+                      description: "Calculating the area of a circle",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "meaning-of-pi (PAR047)",
+                      type: "Particle",
+                      description: "Understanding the constant pi",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Perimeter (MOL012)",
+              type: "Molecule",
+              description: "Calculating perimeters and circumferences",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Perimeter and Circumference (ATM024)",
+                  type: "Atom",
+                  description: "Methods for calculating perimeters and circumferences",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "perimeter (PAR048)",
+                      type: "Particle",
+                      description: "Calculating perimeters of shapes",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "circumference (PAR049)",
+                      type: "Particle",
+                      description: "Calculating circumferences of circles",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "meaning-of-pi (PAR050)",
+                      type: "Particle",
+                      description: "Understanding the constant pi",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Rate (MOL013)",
+              type: "Molecule",
+              description: "Understanding and calculating rates",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Rate Calculations (ATM025)",
+                  type: "Atom",
+                  description: "Methods for calculating rates",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "rate (PAR051)",
+                      type: "Particle",
+                      description: "General rate calculations",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "rate-with-distance-and-time (PAR052)",
+                      type: "Particle",
+                      description: "Calculating rates involving distance and time",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Unit Conversion (MOL014)",
+              type: "Molecule",
+              description: "Converting between units",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Converting Units (ATM026)",
+                  type: "Atom",
+                  description: "Techniques for unit conversion",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "unit-conversion (PAR053)",
+                      type: "Particle",
+                      description: "General unit conversion techniques",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "linear-area-volume-conversion (PAR054)",
+                      type: "Particle",
+                      description: "Converting linear, area, and volume units",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          conceptId: uuidv4(),
+          name: "Algebra (MAT003)",
+          type: "Matter",
+          description: "Fundamental concepts of algebra",
+          molecules: [
+            {
+              conceptId: uuidv4(),
+              name: "Linear Equations (MOL015)",
+              type: "Molecule",
+              description: "Solving linear equations and inequalities",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Solving Equations (ATM027)",
+                  type: "Atom",
+                  description: "Techniques for solving linear equations",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "equation-solving (PAR055)",
+                      type: "Particle",
+                      description: "Methods for solving equations",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "interpreting-linear-equations (PAR056)",
+                      type: "Particle",
+                      description: "Interpreting linear equations",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "equation-concept (PAR057)",
+                      type: "Particle",
+                      description: "Understanding the concept of equations",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Solving Inequalities (ATM028)",
+                  type: "Atom",
+                  description: "Techniques for solving inequalities",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "inequality-solving (PAR058)",
+                      type: "Particle",
+                      description: "Methods for solving inequalities",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "inequalities (PAR059)",
+                      type: "Particle",
+                      description: "Properties of inequalities",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Algebraic Expressions (MOL016)",
+              type: "Molecule",
+              description: "Manipulating and evaluating algebraic expressions",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Manipulating Expressions (ATM029)",
+                  type: "Atom",
+                  description: "Techniques for manipulating algebraic expressions",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "algebraic-manipulation (PAR060)",
+                      type: "Particle",
+                      description: "Methods for manipulating expressions",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "symbolization-articulation (PAR061)",
+                      type: "Particle",
+                      description: "Symbolizing and articulating expressions",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "algebra symbolization (PAR062)",
+                      type: "Particle",
+                      description: "Symbolization in algebra",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "application: compare expressions (PAR063)",
+                      type: "Particle",
+                      description: "Comparing algebraic expressions",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "making-sense-of-expressions-and-equations (PAR064)",
+                      type: "Particle",
+                      description: "Understanding expressions and equations",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Substitution in Expressions (ATM030)",
+                  type: "Atom",
+                  description: "Substituting values in expressions",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "substitution (PAR065)",
+                      type: "Particle",
+                      description: "Techniques for substitution in expressions",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Graphs (MOL017)",
+              type: "Molecule",
+              description: "Plotting and interpreting graphs",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Graph Plotting and Interpretation (ATM031)",
+                  type: "Atom",
+                  description: "Techniques for plotting and interpreting graphs",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "point-plotting (PAR066)",
+                      type: "Particle",
+                      description: "Plotting points on a graph",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "reading-graph (PAR067)",
+                      type: "Particle",
+                      description: "Reading information from graphs",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "application: read points (PAR068)",
+                      type: "Particle",
+                      description: "Reading points from graphs",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "application: compare points (PAR069)",
+                      type: "Particle",
+                      description: "Comparing points on graphs",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "graph interpretation (PAR070)",
+                      type: "Particle",
+                      description: "Interpreting graph features",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "graph-shape (PAR071)",
+                      type: "Particle",
+                      description: "Understanding shapes of graphs",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Slope of Lines (ATM032)",
+                  type: "Atom",
+                  description: "Calculating and understanding slopes",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "slope (PAR072)",
+                      type: "Particle",
+                      description: "Calculating slopes of lines",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "application: find slope in graph (PAR073)",
+                      type: "Particle",
+                      description: "Finding slopes in graphs",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Functions (MOL018)",
+              type: "Molecule",
+              description: "Understanding and evaluating functions",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Evaluating Functions (ATM033)",
+                  type: "Atom",
+                  description: "Techniques for evaluating functions",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "evaluating-functions (PAR074)",
+                      type: "Particle",
+                      description: "Methods for evaluating functions",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "inducing-functions (PAR075)",
+                      type: "Particle",
+                      description: "Understanding function induction",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          conceptId: uuidv4(),
+          name: "Geometry (MAT004)",
+          type: "Matter",
+          description: "Fundamental concepts of geometry",
+          molecules: [
+            {
+              conceptId: uuidv4(),
+              name: "Geometric Shapes and Solids (MOL019)",
+              type: "Molecule",
+              description: "Properties of shapes and solids",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Properties of Shapes (ATM034)",
+                  type: "Atom",
+                  description: "Understanding properties of geometric shapes",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "properties-of-geometric-figures (PAR076)",
+                      type: "Particle",
+                      description: "Properties of 2D geometric figures",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "properties-of-solids (PAR077)",
+                      type: "Particle",
+                      description: "Properties of 3D geometric solids",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Surface Area and Volume (ATM035)",
+                  type: "Atom",
+                  description: "Calculating surface area and volume",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "surface-area-and-volume (PAR078)",
+                      type: "Particle",
+                      description: "Methods for calculating surface area and volume",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Triangle Theorems (MOL020)",
+              type: "Molecule",
+              description: "Theorems related to triangles",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Sum of Interior Angles (ATM036)",
+                  type: "Atom",
+                  description: "Sum of interior angles in polygons",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "sum-of-interior-angles-triangle (PAR079)",
+                      type: "Particle",
+                      description: "Sum of interior angles in triangles",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "sum-of-interior-angles-more-than-3-sides (PAR080)",
+                      type: "Particle",
+                      description: "Sum of interior angles in polygons with more than 3 sides",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Isosceles Triangle Properties (ATM037)",
+                  type: "Atom",
+                  description: "Properties of isosceles triangles",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "isosceles-triangle (PAR081)",
+                      type: "Particle",
+                      description: "Properties of isosceles triangles",
+                    },
+                    {
+                      conceptId: uuidv4(),
+                      name: "application: isosceles triangle (PAR082)",
+                      type: "Particle",
+                      description: "Applications of isosceles triangle properties",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Triangle Inequality (ATM038)",
+                  type: "Atom",
+                  description: "Triangle inequality theorem",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "triangle-inequality (PAR083)",
+                      type: "Particle",
+                      description: "Understanding triangle inequality",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Pythagoras’ Theorem (MOL021)",
+              type: "Molecule",
+              description: "Applying Pythagoras’ theorem",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Applying Pythagoras’ Theorem (ATM039)",
+                  type: "Atom",
+                  description: "Using Pythagoras’ theorem in calculations",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "pythagorean-theorem (PAR084)",
+                      type: "Particle",
+                      description: "Understanding and applying Pythagoras’ theorem",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Angles and Parallel Lines (MOL022)",
+              type: "Molecule",
+              description: "Properties of angles and parallel lines",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Supplementary Angles (ATM040)",
+                  type: "Atom",
+                  description: "Understanding supplementary angles",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "supplementary-angles (PAR085)",
+                      type: "Particle",
+                      description: "Properties of supplementary angles",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Transversals (ATM041)",
+                  type: "Atom",
+                  description: "Properties of transversals",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "transversals (PAR086)",
+                      type: "Particle",
+                      description: "Understanding transversals and their angles",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Congruence and Similarity (MOL023)",
+              type: "Molecule",
+              description: "Understanding congruence and similarity",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Congruence (ATM042)",
+                  type: "Atom",
+                  description: "Properties of congruent shapes",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "congruence (PAR087)",
+                      type: "Particle",
+                      description: "Understanding congruence in shapes",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Similar Triangles (ATM043)",
+                  type: "Atom",
+                  description: "Properties of similar triangles",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "similar-triangles (PAR088)",
+                      type: "Particle",
+                      description: "Understanding similarity in triangles",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          conceptId: uuidv4(),
+          name: "Sets and Probability (MAT005)",
+          type: "Matter",
+          description: "Concepts of sets and probability",
+          molecules: [
+            {
+              conceptId: uuidv4(),
+              name: "Sets (MOL025)",
+              type: "Molecule",
+              description: "Understanding sets and their representations",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Venn Diagrams (ATM045)",
+                  type: "Atom",
+                  description: "Using Venn diagrams to represent sets",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "venn-diagram (PAR090)",
+                      type: "Particle",
+                      description: "Understanding and creating Venn diagrams",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Probability (MOL026)",
+              type: "Molecule",
+              description: "Calculating probabilities",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Probability Calculations (ATM046)",
+                  type: "Atom",
+                  description: "Methods for calculating probabilities",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "probability (PAR091)",
+                      type: "Particle",
+                      description: "Basic probability concepts",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Combinatorics (ATM047)",
+                  type: "Atom",
+                  description: "Counting techniques in probability",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "combinatorics (PAR092)",
+                      type: "Particle",
+                      description: "Understanding combinatorics",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          conceptId: uuidv4(),
+          name: "Statistics (MAT006)",
+          type: "Matter",
+          description: "Fundamental concepts of statistics",
+          molecules: [
+            {
+              conceptId: uuidv4(),
+              name: "Measures of Central Tendency (MOL027)",
+              type: "Molecule",
+              description: "Calculating measures of central tendency",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Mean (ATM048)",
+                  type: "Atom",
+                  description: "Calculating the mean",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "mean (PAR093)",
+                      type: "Particle",
+                      description: "Understanding and calculating the mean",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Median (ATM049)",
+                  type: "Atom",
+                  description: "Calculating the median",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "median (PAR094)",
+                      type: "Particle",
+                      description: "Understanding and calculating the median",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Mode (ATM050)",
+                  type: "Atom",
+                  description: "Calculating the mode",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "mode (PAR095)",
+                      type: "Particle",
+                      description: "Understanding and calculating the mode",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              conceptId: uuidv4(),
+              name: "Data Representation (MOL028)",
+              type: "Molecule",
+              description: "Representing data visually",
+              atoms: [
+                {
+                  conceptId: uuidv4(),
+                  name: "Circle Graphs (ATM051)",
+                  type: "Atom",
+                  description: "Creating and interpreting circle graphs",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "circle-graph (PAR096)",
+                      type: "Particle",
+                      description: "Understanding circle graphs",
+                    },
+                  ],
+                },
+                {
+                  conceptId: uuidv4(),
+                  name: "Stem and Leaf Plots (ATM052)",
+                  type: "Atom",
+                  description: "Creating and interpreting stem and leaf plots",
+                  particles: [
+                    {
+                      conceptId: uuidv4(),
+                      name: "stem-and-leaf-plot (PAR097)",
+                      type: "Particle",
+                      description: "Understanding stem and leaf plots",
                     },
                   ],
                 },
