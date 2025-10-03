@@ -6,7 +6,6 @@ import { AppController } from './app.controller';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from '../health/health.module';
 import { Neo4jModule } from '../common/neo4j/neo4j.module';
-import { ConceptsModule } from '../concepts/concepts.module';
 import { ResourcesModule } from '../resources/resources.module';
 import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
 
@@ -41,7 +40,6 @@ import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
     }),
     HealthModule,
     Neo4jModule,
-    ConceptsModule,
     ResourcesModule,
   ],
     controllers: [AppController],

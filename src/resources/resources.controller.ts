@@ -12,7 +12,7 @@ import { CreateResourceDto } from './dto/create-resource.dto';
 import { CreateResourceResponseDto } from './dto/create-resource-response.dto';
 import { ResourcesService } from './resources.service';
 import { PinoLogger } from 'nestjs-pino';
-import { RolesGuard } from '../auth/roles/roles.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
 import { Request } from 'express';
 import { LoggerUtil } from '../common/utils/logger.util';

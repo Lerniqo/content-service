@@ -1,6 +1,27 @@
-# 🚀 Postman Testing Examples for Content Service API
+# 📤 Resource Upload API - Postman Testing Guide
 
-This guide provides step-by-step examples for testing your Content Service API endpoints using Postman.
+This guide focuses specifically on testing the **POST /resources** endpoint for uploading educational resources.
+
+## 📋 Base Setup
+
+### Collection Variables
+In Postman, set these collection variables:
+- `base_url`: `http://localhost:3000`
+- `admin_user_id`: `admin-123`
+- `teacher_user_id`: `teacher-456`
+
+## 🎯 Available Endpoints
+
+Your Content Service now has these endpoints:
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| GET | `/` | Hello World | No | - |
+| GET | `/health` | Health check | No | - |
+| **POST** | **`/resources`** | **Upload resource** | **Yes** | **teacher, admin** |
+
+## 🎯 Resource Upload ExamplesUpload API - Postman Testing Guide
+
+This guide focuses specifically on testing the **POST /resources** endpoint for uploading educational resources.
 
 ## 📋 Base Setup
 
@@ -10,7 +31,7 @@ In Postman, set these collection variables:
 - `admin_user_id`: `admin-123`
 - `teacher_user_id`: `teacher-456`
 
-## 🧪 Test Examples
+## 🎯 Resource Upload Examples
 
 ### Example 1: Health Check (No Auth Required)
 

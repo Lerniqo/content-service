@@ -5,8 +5,6 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { v4 as uuidv4 } from 'uuid';
 import { Neo4jService } from '../common/neo4j/neo4j.service';
 import { CreateResourceDto } from './dto/create-resource.dto';
 import { CreateResourceResponseDto } from './dto/create-resource-response.dto';
@@ -118,39 +116,6 @@ export class ResourcesService {
     }
   }
 
-  private async verifyUserExists(userId: string): Promise<void> {
-    const query = `
-      MATCH (u) 
-      WHERE u.userId = $userId 
-      AND (u:Teacher OR u:Admin)
-      RETURN u.userId as userId, labels(u) as roles
-    `;
-
-    try {
-      const result = (await this.neo4jService.read(query, { userId })) as any[];
-      
-      if (result.length === 0) {
-        throw new NotFoundException(
-          `User with ID ${userId} not found or does not have Teacher/Admin role`,
-        );
-      }
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      
-      LoggerUtil.logError(
-        this.logger,
-        'ResourcesService',
-        'Error verifying user existence',
-        error,
-        { userId },
-      );
-      
-      throw new InternalServerErrorException('Failed to verify user existence');
-    }
-  }
-
   private async createResourceNode(
     resourceId: string,
     createResourceDto: CreateResourceDto,
@@ -257,50 +222,6 @@ export class ResourcesService {
       
       throw new InternalServerErrorException(
         'Failed to create EXPLAINS relationship',
-      );
-    }
-  }
-
-  private async createPublishedRelationship(
-    userId: string,
-    resourceId: string,
-  ): Promise<void> {
-    const query = `
-      MATCH (u) WHERE u.userId = $userId AND (u:Teacher OR u:Admin)
-      MATCH (r:Resource {resourceId: $resourceId})
-      CREATE (u)-[:PUBLISHED]->(r)
-      RETURN type(r) as relationship
-    `;
-
-    try {
-      const result = (await this.neo4jService.write(query, {
-        userId,
-        resourceId,
-      })) as any[];
-      
-      if (result.length === 0) {
-        throw new InternalServerErrorException(
-          'Failed to create PUBLISHED relationship',
-        );
-      }
-      
-      LoggerUtil.logDebug(
-        this.logger,
-        'ResourcesService',
-        'PUBLISHED relationship created successfully',
-        { userId, resourceId },
-      );
-    } catch (error) {
-      LoggerUtil.logError(
-        this.logger,
-        'ResourcesService',
-        'Error creating PUBLISHED relationship',
-        error,
-        { userId, resourceId },
-      );
-      
-      throw new InternalServerErrorException(
-        'Failed to create PUBLISHED relationship',
       );
     }
   }
