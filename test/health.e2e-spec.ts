@@ -37,17 +37,13 @@ describe('HealthController (e2e)', () => {
 
   describe('/health/readiness (GET)', () => {
     it('should return 404 as readiness endpoint does not exist', () => {
-      return request(app.getHttpServer())
-        .get('/health/readiness')
-        .expect(404);
+      return request(app.getHttpServer()).get('/health/readiness').expect(404);
     });
   });
 
   describe('/health/liveness (GET)', () => {
     it('should return 404 as liveness endpoint does not exist', () => {
-      return request(app.getHttpServer())
-        .get('/health/liveness')
-        .expect(404);
+      return request(app.getHttpServer()).get('/health/liveness').expect(404);
     });
   });
 });

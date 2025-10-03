@@ -1,18 +1,16 @@
-import { CONCEPT_TYPES } from "../../libs/shared-types";
-import type { ConceptType } from "../../libs/shared-types";
-import { ApiProperty } from "@nestjs/swagger";
-import { IsString, IsNotEmpty, IsIn, Length, IsOptional, ValidateIf, ValidationArguments } from "class-validator";
-import { Transform } from "class-transformer";
-
-// Custom validation decorator to ensure at least one property is provided
-function IsAtLeastOneProperty() {
-  return function (object: any, propertyName: string) {
-    // This will be handled in the controller instead since it's easier
-  }
-}
+import { CONCEPT_TYPES } from '../../libs/shared-types';
+import type { ConceptType } from '../../libs/shared-types';
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsString,
+  IsNotEmpty,
+  IsIn,
+  Length,
+  IsOptional,
+  ValidateIf,
+} from 'class-validator';
 
 export class UpdateConceptDto {
-
   @ApiProperty({
     description: 'Name of the concept',
     example: 'Matter',
@@ -33,11 +31,24 @@ export class UpdateConceptDto {
   @IsOptional()
   @IsString({ message: 'Type must be a string' })
   @IsNotEmpty({ message: 'Type cannot be empty if provided' })
-  @IsIn(CONCEPT_TYPES, { message: `Type must be one of: ${CONCEPT_TYPES.join(', ')}` })
+  @IsIn(CONCEPT_TYPES, {
+    message: `Type must be one of: ${CONCEPT_TYPES.join(', ')}`,
+  })
   type?: ConceptType;
 
   @ApiProperty({
-    description: 'Optional parent concept ID to create/update a relationship. Set to null or empty string to remove parent relationship.',
+    description: 'Optional description of the concept',
+    example: 'Updated description of the concept',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Description must be a string' })
+  @Length(0, 1000, { message: 'Description must be less than 1000 characters' })
+  description?: string;
+
+  @ApiProperty({
+    description:
+      'Optional parent concept ID to create/update a CONTAINS relationship. Set to null or empty string to remove parent relationship.',
     example: 'parent-concept-123',
     required: false,
   })

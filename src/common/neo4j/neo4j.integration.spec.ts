@@ -32,9 +32,9 @@ describe('Neo4jService Integration', () => {
         .useValue({
           get: jest.fn().mockImplementation((key: string) => {
             const config = {
-              'NEO4J_URI': process.env.NEO4J_URI || 'bolt://localhost:7687',
-              'NEO4J_USERNAME': process.env.NEO4J_USERNAME || 'neo4j',
-              'NEO4J_PASSWORD': process.env.NEO4J_PASSWORD || 'password',
+              NEO4J_URI: process.env.NEO4J_URI || 'bolt://localhost:7687',
+              NEO4J_USERNAME: process.env.NEO4J_USERNAME || 'neo4j',
+              NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || 'password',
             };
             return config[key];
           }),
@@ -71,7 +71,7 @@ describe('Neo4jService Integration', () => {
       // Create a test node
       const createResult = await service.write(
         'CREATE (n:TestNode {name: $name, id: $id}) RETURN n',
-        { name: 'Integration Test', id: 1 }
+        { name: 'Integration Test', id: 1 },
       );
 
       expect(createResult).toHaveLength(1);
@@ -80,7 +80,7 @@ describe('Neo4jService Integration', () => {
       // Read the created node
       const readResult = await service.read(
         'MATCH (n:TestNode {id: $id}) RETURN n',
-        { id: 1 }
+        { id: 1 },
       );
 
       expect(readResult).toHaveLength(1);
@@ -91,12 +91,12 @@ describe('Neo4jService Integration', () => {
       // Create multiple nodes
       await service.write(
         'CREATE (n1:TestNode {name: $name1, id: $id1}), (n2:TestNode {name: $name2, id: $id2})',
-        { name1: 'Node 1', id1: 1, name2: 'Node 2', id2: 2 }
+        { name1: 'Node 1', id1: 1, name2: 'Node 2', id2: 2 },
       );
 
       // Count nodes
       const countResult = await service.read(
-        'MATCH (n:TestNode) RETURN count(n) as count'
+        'MATCH (n:TestNode) RETURN count(n) as count',
       );
 
       expect(countResult[0].count).toEqual(expect.any(Number));
@@ -154,9 +154,9 @@ describe('Neo4jService Integration', () => {
       mockConfigService = {
         get: jest.fn().mockImplementation((key: string) => {
           const config = {
-            'NEO4J_URI': 'bolt://test:7687',
-            'NEO4J_USERNAME': 'testuser',
-            'NEO4J_PASSWORD': 'testpass',
+            NEO4J_URI: 'bolt://test:7687',
+            NEO4J_USERNAME: 'testuser',
+            NEO4J_PASSWORD: 'testpass',
           };
           return config[key];
         }),

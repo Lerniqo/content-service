@@ -12,14 +12,14 @@ describe('ConceptsController (e2e) - Simple', () => {
     id: 'admin-test-123',
     role: ['admin'],
     email: 'admin@test.com',
-    name: 'Test Admin'
+    name: 'Test Admin',
   };
 
   const mockNonAdminUser = {
     id: 'user-test-456',
     role: ['user'],
     email: 'user@test.com',
-    name: 'Test User'
+    name: 'Test User',
   };
 
   beforeAll(async () => {
@@ -29,7 +29,7 @@ describe('ConceptsController (e2e) - Simple', () => {
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe());
-    
+
     neo4jService = moduleFixture.get<Neo4jService>(Neo4jService);
     await app.init();
   });
@@ -38,7 +38,9 @@ describe('ConceptsController (e2e) - Simple', () => {
     // Clean up any remaining test data
     const session = neo4jService.getSession();
     try {
-      await session.run('MATCH (c:Concept) WHERE c.id STARTS WITH "test-" DETACH DELETE c');
+      await session.run(
+        'MATCH (c:Concept) WHERE c.id STARTS WITH "test-" DETACH DELETE c',
+      );
     } catch (error) {
       console.warn('Cleanup warning:', error.message);
     } finally {
@@ -56,7 +58,7 @@ describe('ConceptsController (e2e) - Simple', () => {
       const conceptDto = {
         id: 'test-simple-concept-' + Date.now(),
         name: 'Simple Test Concept',
-        type: 'Matter'
+        type: 'Matter',
       };
 
       const response = await request(app.getHttpServer())
@@ -71,7 +73,7 @@ describe('ConceptsController (e2e) - Simple', () => {
       const session = neo4jService.getSession();
       try {
         await session.run('MATCH (c:Concept {id: $id}) DETACH DELETE c', {
-          id: conceptDto.id
+          id: conceptDto.id,
         });
       } catch (error) {
         console.warn('Cleanup warning:', error.message);
@@ -84,7 +86,7 @@ describe('ConceptsController (e2e) - Simple', () => {
       const conceptDto = {
         id: 'test-reject-concept-' + Date.now(),
         name: 'Reject Test Concept',
-        type: 'Matter'
+        type: 'Matter',
       };
 
       return request(app.getHttpServer())
@@ -96,7 +98,7 @@ describe('ConceptsController (e2e) - Simple', () => {
 
     it('should validate required fields', () => {
       const invalidDto = {
-        name: 'Test Concept'
+        name: 'Test Concept',
         // Missing id and type
       };
 
@@ -111,7 +113,7 @@ describe('ConceptsController (e2e) - Simple', () => {
       const invalidDto = {
         id: 'test-invalid-type-' + Date.now(),
         name: 'Test Concept',
-        type: 'InvalidType'
+        type: 'InvalidType',
       };
 
       return request(app.getHttpServer())
@@ -125,7 +127,7 @@ describe('ConceptsController (e2e) - Simple', () => {
       const conceptDto = {
         id: 'test-no-parent-' + Date.now(),
         name: 'Independent Concept',
-        type: 'Atom'
+        type: 'Atom',
       };
 
       await request(app.getHttpServer())
@@ -138,7 +140,7 @@ describe('ConceptsController (e2e) - Simple', () => {
       const session = neo4jService.getSession();
       try {
         await session.run('MATCH (c:Concept {id: $id}) DETACH DELETE c', {
-          id: conceptDto.id
+          id: conceptDto.id,
         });
       } catch (error) {
         console.warn('Cleanup warning:', error.message);
@@ -149,12 +151,12 @@ describe('ConceptsController (e2e) - Simple', () => {
 
     it('should validate all CONCEPT_TYPES enum values', async () => {
       const conceptTypes = ['Matter', 'Molecule', 'Atom', 'Particle'];
-      
+
       for (const conceptType of conceptTypes) {
         const conceptDto = {
           id: `test-${conceptType.toLowerCase()}-${Date.now()}`,
           name: `Test ${conceptType}`,
-          type: conceptType
+          type: conceptType,
         };
 
         await request(app.getHttpServer())
@@ -167,7 +169,7 @@ describe('ConceptsController (e2e) - Simple', () => {
         const session = neo4jService.getSession();
         try {
           await session.run('MATCH (c:Concept {id: $id}) DETACH DELETE c', {
-            id: conceptDto.id
+            id: conceptDto.id,
           });
         } catch (error) {
           console.warn('Cleanup warning:', error.message);
@@ -183,7 +185,7 @@ describe('ConceptsController (e2e) - Simple', () => {
 
     beforeEach(async () => {
       testConceptId = 'test-update-' + Date.now();
-      
+
       // Create a test concept to update
       await request(app.getHttpServer())
         .post('/concepts')
@@ -191,7 +193,7 @@ describe('ConceptsController (e2e) - Simple', () => {
         .send({
           id: testConceptId,
           name: 'Original Test Matter',
-          type: 'Matter'
+          type: 'Matter',
         })
         .expect(201);
     });
@@ -201,7 +203,7 @@ describe('ConceptsController (e2e) - Simple', () => {
       const session = neo4jService.getSession();
       try {
         await session.run('MATCH (c:Concept {id: $id}) DETACH DELETE c', {
-          id: testConceptId
+          id: testConceptId,
         });
       } catch (error) {
         console.warn('Cleanup warning:', error.message);
@@ -213,7 +215,7 @@ describe('ConceptsController (e2e) - Simple', () => {
     it('should update a concept with admin role', () => {
       const updateDto = {
         name: 'Updated Test Matter',
-        type: 'Molecule'
+        type: 'Molecule',
       };
 
       return request(app.getHttpServer())
@@ -230,7 +232,7 @@ describe('ConceptsController (e2e) - Simple', () => {
     it('should reject update from non-admin user', () => {
       const updateDto = {
         name: 'Updated Test Matter',
-        type: 'Molecule'
+        type: 'Molecule',
       };
 
       return request(app.getHttpServer())
@@ -242,7 +244,7 @@ describe('ConceptsController (e2e) - Simple', () => {
 
     it('should update concept with partial data', () => {
       const partialUpdateDto = {
-        name: 'Partially Updated Name'
+        name: 'Partially Updated Name',
       };
 
       return request(app.getHttpServer())
@@ -271,17 +273,20 @@ describe('ConceptsController (e2e) - Simple', () => {
     beforeEach(async () => {
       testConceptId = 'test-concept-prereq-' + Date.now();
       testPrerequisiteId = 'test-prerequisite-' + Date.now();
-      
+
       // Create test concepts
       const session = neo4jService.getSession();
       try {
-        await session.run(`
+        await session.run(
+          `
           CREATE (c1:Concept {id: $conceptId, name: 'Test Concept', type: 'Matter'})
           CREATE (c2:Concept {id: $prerequisiteId, name: 'Test Prerequisite', type: 'Matter'})
-        `, {
-          conceptId: testConceptId,
-          prerequisiteId: testPrerequisiteId
-        });
+        `,
+          {
+            conceptId: testConceptId,
+            prerequisiteId: testPrerequisiteId,
+          },
+        );
       } catch (error) {
         console.warn('Setup warning:', error.message);
       } finally {
@@ -293,14 +298,17 @@ describe('ConceptsController (e2e) - Simple', () => {
       // Clean up test data
       const session = neo4jService.getSession();
       try {
-        await session.run(`
+        await session.run(
+          `
           MATCH (c:Concept) 
           WHERE c.id IN [$conceptId, $prerequisiteId] 
           DETACH DELETE c
-        `, {
-          conceptId: testConceptId,
-          prerequisiteId: testPrerequisiteId
-        });
+        `,
+          {
+            conceptId: testConceptId,
+            prerequisiteId: testPrerequisiteId,
+          },
+        );
       } catch (error) {
         console.warn('Cleanup warning:', error.message);
       } finally {
@@ -310,7 +318,7 @@ describe('ConceptsController (e2e) - Simple', () => {
 
     it('should create a prerequisite relationship with admin role', async () => {
       const prerequisiteDto = {
-        prerequisiteId: testPrerequisiteId
+        prerequisiteId: testPrerequisiteId,
       };
 
       await request(app.getHttpServer())
@@ -325,7 +333,7 @@ describe('ConceptsController (e2e) - Simple', () => {
 
     it('should reject request from non-admin user', () => {
       const prerequisiteDto = {
-        prerequisiteId: testPrerequisiteId
+        prerequisiteId: testPrerequisiteId,
       };
 
       return request(app.getHttpServer())
@@ -345,7 +353,7 @@ describe('ConceptsController (e2e) - Simple', () => {
 
     it('should return 404 for non-existent concept', () => {
       const prerequisiteDto = {
-        prerequisiteId: testPrerequisiteId
+        prerequisiteId: testPrerequisiteId,
       };
 
       return request(app.getHttpServer())
@@ -357,7 +365,7 @@ describe('ConceptsController (e2e) - Simple', () => {
 
     it('should return 404 for non-existent prerequisite', () => {
       const prerequisiteDto = {
-        prerequisiteId: 'non-existent-prerequisite'
+        prerequisiteId: 'non-existent-prerequisite',
       };
 
       return request(app.getHttpServer())

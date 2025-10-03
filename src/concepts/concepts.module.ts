@@ -6,6 +6,6 @@ import { Neo4jModule } from '../common/neo4j/neo4j.module';
 @Module({
   imports: [Neo4jModule],
   providers: [ConceptsService],
-  controllers: [ConceptsController]
+  controllers: [ConceptsController],
 })
 export class ConceptsModule {}

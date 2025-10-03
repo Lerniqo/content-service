@@ -12,14 +12,14 @@ describe('ConceptsController (e2e)', () => {
     id: 'admin-test-123',
     role: ['admin'],
     email: 'admin@test.com',
-    name: 'Test Admin'
+    name: 'Test Admin',
   };
 
   const mockNonAdminUser = {
     id: 'user-test-456',
     role: ['user'],
     email: 'user@test.com',
-    name: 'Test User'
+    name: 'Test User',
   };
 
   // Mock JWT guard to simulate authenticated requests
@@ -31,13 +31,13 @@ describe('ConceptsController (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
-    .overrideGuard('JwtGuard') // If you have a JWT guard
-    .useValue(mockJwtGuard)
-    .compile();
+      .overrideGuard('JwtGuard') // If you have a JWT guard
+      .useValue(mockJwtGuard)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe());
-    
+
     neo4jService = moduleFixture.get<Neo4jService>(Neo4jService);
     await app.init();
   });
@@ -54,7 +54,7 @@ describe('ConceptsController (e2e)', () => {
     const validCreateConceptDto = {
       id: 'test-concept-123',
       name: 'Test Matter',
-      type: 'Matter'
+      type: 'Matter',
       // Removed parentId to avoid parent dependency issues
     };
 
@@ -63,7 +63,7 @@ describe('ConceptsController (e2e)', () => {
       const session = neo4jService.getSession();
       try {
         await session.run('MATCH (c:Concept {id: $id}) DETACH DELETE c', {
-          id: validCreateConceptDto.id
+          id: validCreateConceptDto.id,
         });
       } catch (error) {
         // Ignore cleanup errors
@@ -95,7 +95,7 @@ describe('ConceptsController (e2e)', () => {
     it('should validate required fields', () => {
       const invalidDto = {
         // Missing required fields
-        name: 'Test Concept'
+        name: 'Test Concept',
       };
 
       return request(app.getHttpServer())
@@ -105,8 +105,12 @@ describe('ConceptsController (e2e)', () => {
         .expect(400)
         .expect((res) => {
           expect(Array.isArray(res.body.message)).toBe(true);
-          expect(res.body.message.some((msg: string) => msg.includes('ID'))).toBe(true);
-          expect(res.body.message.some((msg: string) => msg.includes('Type'))).toBe(true);
+          expect(
+            res.body.message.some((msg: string) => msg.includes('ID')),
+          ).toBe(true);
+          expect(
+            res.body.message.some((msg: string) => msg.includes('Type')),
+          ).toBe(true);
         });
     });
 
@@ -114,7 +118,7 @@ describe('ConceptsController (e2e)', () => {
       const invalidDto = {
         id: '', // Empty id
         name: 'Test Concept',
-        type: 'Matter'
+        type: 'Matter',
       };
 
       return request(app.getHttpServer())
@@ -124,7 +128,9 @@ describe('ConceptsController (e2e)', () => {
         .expect(400)
         .expect((res) => {
           expect(Array.isArray(res.body.message)).toBe(true);
-          expect(res.body.message.some((msg: string) => msg.includes('ID'))).toBe(true);
+          expect(
+            res.body.message.some((msg: string) => msg.includes('ID')),
+          ).toBe(true);
         });
     });
 
@@ -132,7 +138,7 @@ describe('ConceptsController (e2e)', () => {
       const invalidDto = {
         id: 'test-concept-456',
         name: 'A', // Too short
-        type: 'Matter'
+        type: 'Matter',
       };
 
       return request(app.getHttpServer())
@@ -142,7 +148,9 @@ describe('ConceptsController (e2e)', () => {
         .expect(400)
         .expect((res) => {
           expect(Array.isArray(res.body.message)).toBe(true);
-          expect(res.body.message.some((msg: string) => msg.includes('Name'))).toBe(true);
+          expect(
+            res.body.message.some((msg: string) => msg.includes('Name')),
+          ).toBe(true);
         });
     });
 
@@ -150,7 +158,7 @@ describe('ConceptsController (e2e)', () => {
       const invalidDto = {
         id: 'test-concept-789',
         name: 'Test Concept',
-        type: 'InvalidType' // Not in CONCEPT_TYPES enum
+        type: 'InvalidType', // Not in CONCEPT_TYPES enum
       };
 
       return request(app.getHttpServer())
@@ -160,7 +168,9 @@ describe('ConceptsController (e2e)', () => {
         .expect(400)
         .expect((res) => {
           expect(Array.isArray(res.body.message)).toBe(true);
-          expect(res.body.message.some((msg: string) => msg.includes('Type'))).toBe(true);
+          expect(
+            res.body.message.some((msg: string) => msg.includes('Type')),
+          ).toBe(true);
         });
     });
 
@@ -168,7 +178,7 @@ describe('ConceptsController (e2e)', () => {
       const conceptWithoutParent = {
         id: 'test-concept-no-parent',
         name: 'Independent Concept',
-        type: 'Atom'
+        type: 'Atom',
       };
 
       return request(app.getHttpServer())
@@ -181,7 +191,7 @@ describe('ConceptsController (e2e)', () => {
           const session = neo4jService.getSession();
           try {
             await session.run('MATCH (c:Concept {id: $id}) DETACH DELETE c', {
-              id: conceptWithoutParent.id
+              id: conceptWithoutParent.id,
             });
           } finally {
             await session.close();
@@ -225,12 +235,12 @@ describe('ConceptsController (e2e)', () => {
 
     it('should validate all CONCEPT_TYPES enum values', async () => {
       const conceptTypes = ['Matter', 'Molecule', 'Atom', 'Particle'];
-      
+
       for (const conceptType of conceptTypes) {
         const conceptDto = {
           id: `test-${conceptType.toLowerCase()}-${Date.now()}`,
           name: `Test ${conceptType}`,
-          type: conceptType
+          type: conceptType,
         };
 
         await request(app.getHttpServer())
@@ -243,7 +253,7 @@ describe('ConceptsController (e2e)', () => {
         const session = neo4jService.getSession();
         try {
           await session.run('MATCH (c:Concept {id: $id}) DETACH DELETE c', {
-            id: conceptDto.id
+            id: conceptDto.id,
           });
         } finally {
           await session.close();
@@ -257,7 +267,7 @@ describe('ConceptsController (e2e)', () => {
       const validDto = {
         id: 'auth-test-concept',
         name: 'Auth Test',
-        type: 'Matter'
+        type: 'Matter',
       };
 
       // Test with non-admin user should fail
@@ -278,7 +288,7 @@ describe('ConceptsController (e2e)', () => {
       const session = neo4jService.getSession();
       try {
         await session.run('MATCH (c:Concept {id: $id}) DETACH DELETE c', {
-          id: validDto.id
+          id: validDto.id,
         });
       } finally {
         await session.close();
@@ -290,7 +300,7 @@ describe('ConceptsController (e2e)', () => {
     const testConceptId = 'test-update-concept-123';
     const validUpdateConceptDto = {
       name: 'Updated Test Matter',
-      type: 'Molecule'
+      type: 'Molecule',
       // Removed parentId to avoid dependency issues
     };
 
@@ -302,7 +312,7 @@ describe('ConceptsController (e2e)', () => {
         .send({
           id: testConceptId,
           name: 'Original Test Matter',
-          type: 'Matter'
+          type: 'Matter',
           // Removed parentId to avoid dependency issues
         })
         .expect(201);
@@ -313,7 +323,7 @@ describe('ConceptsController (e2e)', () => {
       const session = neo4jService.getSession();
       try {
         await session.run('MATCH (c:Concept {id: $id}) DETACH DELETE c', {
-          id: testConceptId
+          id: testConceptId,
         });
       } catch (error) {
         // Ignore cleanup errors
@@ -345,7 +355,7 @@ describe('ConceptsController (e2e)', () => {
 
     it('should update concept with partial data', () => {
       const partialUpdateDto = {
-        name: 'Partially Updated Name'
+        name: 'Partially Updated Name',
       };
 
       return request(app.getHttpServer())
@@ -372,7 +382,7 @@ describe('ConceptsController (e2e)', () => {
     it('should validate type field with enum values on update', () => {
       const invalidUpdateDto = {
         name: 'Updated Concept',
-        type: 'InvalidType' // Not in CONCEPT_TYPES enum
+        type: 'InvalidType', // Not in CONCEPT_TYPES enum
       };
 
       return request(app.getHttpServer())
@@ -382,13 +392,15 @@ describe('ConceptsController (e2e)', () => {
         .expect(400)
         .expect((res) => {
           expect(Array.isArray(res.body.message)).toBe(true);
-          expect(res.body.message.some((msg: string) => msg.includes('Type'))).toBe(true);
+          expect(
+            res.body.message.some((msg: string) => msg.includes('Type')),
+          ).toBe(true);
         });
     });
 
     it('should validate name field length on update', () => {
       const invalidUpdateDto = {
-        name: 'A' // Too short
+        name: 'A', // Too short
       };
 
       return request(app.getHttpServer())
@@ -398,14 +410,16 @@ describe('ConceptsController (e2e)', () => {
         .expect(400)
         .expect((res) => {
           expect(Array.isArray(res.body.message)).toBe(true);
-          expect(res.body.message.some((msg: string) => msg.includes('Name'))).toBe(true);
+          expect(
+            res.body.message.some((msg: string) => msg.includes('Name')),
+          ).toBe(true);
         });
     });
 
     it('should handle removing parent relationship', () => {
       const removeParentDto = {
         name: 'Updated Name',
-        parentId: '' // Empty string to remove parent
+        parentId: '', // Empty string to remove parent
       };
 
       return request(app.getHttpServer())
@@ -421,7 +435,7 @@ describe('ConceptsController (e2e)', () => {
     it('should handle invalid parent concept ID', () => {
       const invalidParentDto = {
         name: 'Updated Name',
-        parentId: 'non-existent-parent-999'
+        parentId: 'non-existent-parent-999',
       };
 
       return request(app.getHttpServer())
@@ -451,11 +465,11 @@ describe('ConceptsController (e2e)', () => {
 
     it('should update with all valid CONCEPT_TYPES enum values', async () => {
       const conceptTypes = ['Matter', 'Molecule', 'Atom', 'Particle'];
-      
+
       for (const conceptType of conceptTypes) {
         const updateDto = {
           name: `Updated ${conceptType}`,
-          type: conceptType
+          type: conceptType,
         };
 
         await request(app.getHttpServer())
@@ -475,7 +489,7 @@ describe('ConceptsController (e2e)', () => {
       const testConceptId = 'auth-update-test-concept';
       const updateDto = {
         name: 'Auth Update Test',
-        type: 'Matter'
+        type: 'Matter',
       };
 
       // First create a concept to update
@@ -485,7 +499,7 @@ describe('ConceptsController (e2e)', () => {
         .send({
           id: testConceptId,
           name: 'Original Auth Test',
-          type: 'Atom'
+          type: 'Atom',
         })
         .expect(201);
 
@@ -508,7 +522,7 @@ describe('ConceptsController (e2e)', () => {
         const session = neo4jService.getSession();
         try {
           await session.run('MATCH (c:Concept {id: $id}) DETACH DELETE c', {
-            id: testConceptId
+            id: testConceptId,
           });
         } catch (error) {
           // Ignore cleanup errors
@@ -528,23 +542,29 @@ describe('ConceptsController (e2e)', () => {
       const session = neo4jService.getSession();
       try {
         // Clean up any existing test data
-        await session.run(`
+        await session.run(
+          `
           MATCH (c:Concept) 
           WHERE c.id IN [$conceptId, $prerequisiteId] 
           DETACH DELETE c
-        `, {
-          conceptId: testConceptId,
-          prerequisiteId: testPrerequisiteId
-        });
+        `,
+          {
+            conceptId: testConceptId,
+            prerequisiteId: testPrerequisiteId,
+          },
+        );
 
         // Create test concepts
-        await session.run(`
+        await session.run(
+          `
           CREATE (c1:Concept {id: $conceptId, name: 'Test Concept', type: 'Matter'})
           CREATE (c2:Concept {id: $prerequisiteId, name: 'Test Prerequisite', type: 'Matter'})
-        `, {
-          conceptId: testConceptId,
-          prerequisiteId: testPrerequisiteId
-        });
+        `,
+          {
+            conceptId: testConceptId,
+            prerequisiteId: testPrerequisiteId,
+          },
+        );
       } finally {
         await session.close();
       }
@@ -554,14 +574,17 @@ describe('ConceptsController (e2e)', () => {
       // Clean up test data
       const session = neo4jService.getSession();
       try {
-        await session.run(`
+        await session.run(
+          `
           MATCH (c:Concept) 
           WHERE c.id IN [$conceptId, $prerequisiteId] 
           DETACH DELETE c
-        `, {
-          conceptId: testConceptId,
-          prerequisiteId: testPrerequisiteId
-        });
+        `,
+          {
+            conceptId: testConceptId,
+            prerequisiteId: testPrerequisiteId,
+          },
+        );
       } finally {
         await session.close();
       }
@@ -569,7 +592,7 @@ describe('ConceptsController (e2e)', () => {
 
     it('should create a prerequisite relationship with admin role', async () => {
       const prerequisiteDto = {
-        prerequisiteId: testPrerequisiteId
+        prerequisiteId: testPrerequisiteId,
       };
 
       await request(app.getHttpServer())
@@ -579,20 +602,23 @@ describe('ConceptsController (e2e)', () => {
         .expect(200)
         .expect((res) => {
           expect(res.body).toEqual({
-            message: 'Prerequisite relationship created successfully'
+            message: 'Prerequisite relationship created successfully',
           });
         });
 
       // Verify the relationship was created in the database
       const session = neo4jService.getSession();
       try {
-        const result = await session.run(`
+        const result = await session.run(
+          `
           MATCH (c:Concept {id: $conceptId})-[r:HAS_PREREQUISITE]->(p:Concept {id: $prerequisiteId})
           RETURN r
-        `, {
-          conceptId: testConceptId,
-          prerequisiteId: testPrerequisiteId
-        });
+        `,
+          {
+            conceptId: testConceptId,
+            prerequisiteId: testPrerequisiteId,
+          },
+        );
 
         expect(result.records.length).toBe(1);
       } finally {
@@ -602,7 +628,7 @@ describe('ConceptsController (e2e)', () => {
 
     it('should reject request from non-admin user', async () => {
       const prerequisiteDto = {
-        prerequisiteId: testPrerequisiteId
+        prerequisiteId: testPrerequisiteId,
       };
 
       await request(app.getHttpServer())
@@ -630,7 +656,7 @@ describe('ConceptsController (e2e)', () => {
 
     it('should return 404 for non-existent concept', async () => {
       const prerequisiteDto = {
-        prerequisiteId: testPrerequisiteId
+        prerequisiteId: testPrerequisiteId,
       };
 
       await request(app.getHttpServer())
@@ -642,7 +668,7 @@ describe('ConceptsController (e2e)', () => {
 
     it('should return 404 for non-existent prerequisite', async () => {
       const prerequisiteDto = {
-        prerequisiteId: 'non-existent-prerequisite'
+        prerequisiteId: 'non-existent-prerequisite',
       };
 
       await request(app.getHttpServer())
@@ -654,7 +680,7 @@ describe('ConceptsController (e2e)', () => {
 
     it('should return 400 when trying to create duplicate relationship', async () => {
       const prerequisiteDto = {
-        prerequisiteId: testPrerequisiteId
+        prerequisiteId: testPrerequisiteId,
       };
 
       // Create the relationship first time
@@ -674,7 +700,7 @@ describe('ConceptsController (e2e)', () => {
 
     it('should return 400 for invalid concept ID', async () => {
       const prerequisiteDto = {
-        prerequisiteId: testPrerequisiteId
+        prerequisiteId: testPrerequisiteId,
       };
 
       await request(app.getHttpServer())

@@ -32,7 +32,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     const { status, message, error, details } = this.getErrorInfo(exception);
-    
+
     const errorResponse: ErrorResponse = {
       statusCode: status,
       timestamp: new Date().toISOString(),
@@ -41,7 +41,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message,
       error,
       details,
-      requestId: request.headers['x-request-id'] as string || undefined,
+      requestId: (request.headers['x-request-id'] as string) || undefined,
     };
 
     // Log the error with appropriate level
@@ -60,7 +60,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const response = exception.getResponse();
-      
+
       if (typeof response === 'string') {
         return {
           status,
@@ -68,7 +68,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
           error: exception.name,
         };
       }
-      
+
       if (typeof response === 'object' && response !== null) {
         return {
           status,
@@ -77,7 +77,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
           details: response,
         };
       }
-      
+
       return {
         status,
         message: exception.message,
@@ -90,14 +90,21 @@ export class HttpExceptionFilter implements ExceptionFilter {
       const status = this.getStatusFromError(exception);
       return {
         status,
-        message: status === HttpStatus.INTERNAL_SERVER_ERROR 
-          ? 'Internal server error' 
-          : exception.message,
+        message:
+          status === HttpStatus.INTERNAL_SERVER_ERROR
+            ? 'Internal server error'
+            : exception.message,
         error: exception.name,
-        details: status === HttpStatus.INTERNAL_SERVER_ERROR ? undefined : {
-          name: exception.name,
-          stack: process.env.NODE_ENV === 'development' ? exception.stack : undefined,
-        },
+        details:
+          status === HttpStatus.INTERNAL_SERVER_ERROR
+            ? undefined
+            : {
+                name: exception.name,
+                stack:
+                  process.env.NODE_ENV === 'development'
+                    ? exception.stack
+                    : undefined,
+              },
       };
     }
 
@@ -106,49 +113,60 @@ export class HttpExceptionFilter implements ExceptionFilter {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Internal server error',
       error: 'UnknownError',
-      details: process.env.NODE_ENV === 'development' ? { exception } : undefined,
+      details:
+        process.env.NODE_ENV === 'development' ? { exception } : undefined,
     };
   }
 
   private getStatusFromError(error: Error): number {
     // Map common error types to HTTP status codes
     const errorName = error.name.toLowerCase();
-    
+
     if (errorName.includes('validation')) {
       return HttpStatus.BAD_REQUEST;
     }
-    
-    if (errorName.includes('unauthorized') || errorName.includes('authentication')) {
+
+    if (
+      errorName.includes('unauthorized') ||
+      errorName.includes('authentication')
+    ) {
       return HttpStatus.UNAUTHORIZED;
     }
-    
-    if (errorName.includes('forbidden') || errorName.includes('authorization')) {
+
+    if (
+      errorName.includes('forbidden') ||
+      errorName.includes('authorization')
+    ) {
       return HttpStatus.FORBIDDEN;
     }
-    
+
     if (errorName.includes('notfound') || errorName.includes('not found')) {
       return HttpStatus.NOT_FOUND;
     }
-    
+
     if (errorName.includes('conflict') || errorName.includes('duplicate')) {
       return HttpStatus.CONFLICT;
     }
-    
+
     if (errorName.includes('timeout')) {
       return HttpStatus.REQUEST_TIMEOUT;
     }
-    
+
     return HttpStatus.INTERNAL_SERVER_ERROR;
   }
 
-  private logError(exception: unknown, errorResponse: ErrorResponse, request: Request): void {
+  private logError(
+    exception: unknown,
+    errorResponse: ErrorResponse,
+    request: Request,
+  ): void {
     const { statusCode, message, requestId } = errorResponse;
     const emoji = this.getStatusEmoji(statusCode);
     const reqId = requestId || 'no-id';
-    
+
     // Simple one-line summary for all requests
     const summary = `${emoji} ${request.method} ${request.url} → ${statusCode} (${reqId})`;
-    
+
     if (statusCode >= 500) {
       // Server errors - critical, need full context
       const errorDetails = {
@@ -156,18 +174,24 @@ export class HttpExceptionFilter implements ExceptionFilter {
         method: request.method,
         url: request.url,
         requestId: reqId,
-        error: exception instanceof Error ? {
-          name: exception.name,
-          message: exception.message,
-          ...(process.env.NODE_ENV === 'development' && { 
-            stack: exception.stack?.split('\n').slice(0, 5).join('\n') 
-          })
-        } : exception,
+        error:
+          exception instanceof Error
+            ? {
+                name: exception.name,
+                message: exception.message,
+                ...(process.env.NODE_ENV === 'development' && {
+                  stack: exception.stack?.split('\n').slice(0, 5).join('\n'),
+                }),
+              }
+            : exception,
         userAgent: request.headers['user-agent'],
-        ip: request.ip
+        ip: request.ip,
       };
-      
-      this.logger.error(errorDetails, `🚨 SERVER ERROR | ${summary} | ${message}`);
+
+      this.logger.error(
+        errorDetails,
+        `🚨 SERVER ERROR | ${summary} | ${message}`,
+      );
     } else if (statusCode >= 400) {
       // Client errors - include relevant request details
       const clientDetails = {
@@ -178,14 +202,24 @@ export class HttpExceptionFilter implements ExceptionFilter {
         body: this.sanitizeRequestBody(request.body),
         params: request.params,
         query: request.query,
-        userAgent: request.headers['user-agent']
+        userAgent: request.headers['user-agent'],
       };
-      
-      this.logger.warn(clientDetails, `⚠️ CLIENT ERROR | ${summary} | ${message}`);
+
+      this.logger.warn(
+        clientDetails,
+        `⚠️ CLIENT ERROR | ${summary} | ${message}`,
+      );
     } else {
       // Other exceptions - minimal logging
-      this.logger.info({ statusCode, method: request.method, url: request.url, requestId: reqId }, 
-        `ℹ️ HTTP EXCEPTION | ${summary} | ${message}`);
+      this.logger.info(
+        {
+          statusCode,
+          method: request.method,
+          url: request.url,
+          requestId: reqId,
+        },
+        `ℹ️ HTTP EXCEPTION | ${summary} | ${message}`,
+      );
     }
   }
 
@@ -195,15 +229,21 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     // Create a copy and remove sensitive fields
-    const sensitiveFields = ['password', 'token', 'secret', 'key', 'authorization'];
+    const sensitiveFields = [
+      'password',
+      'token',
+      'secret',
+      'key',
+      'authorization',
+    ];
     const sanitized = { ...body };
-    
+
     for (const field of sensitiveFields) {
       if (sanitized[field]) {
         sanitized[field] = '[REDACTED]';
       }
     }
-    
+
     return sanitized;
   }
 
@@ -211,8 +251,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (!headers || typeof headers !== 'object') return {};
 
     const sanitized: any = {};
-    const keepHeaders = ['content-type', 'accept', 'user-agent', 'x-request-id'];
-    const sensitiveHeaders = ['authorization', 'cookie', 'x-api-key', 'x-auth-token'];
+    const keepHeaders = [
+      'content-type',
+      'accept',
+      'user-agent',
+      'x-request-id',
+    ];
+    const sensitiveHeaders = [
+      'authorization',
+      'cookie',
+      'x-api-key',
+      'x-auth-token',
+    ];
 
     Object.entries(headers).forEach(([key, value]) => {
       const lowerKey = key.toLowerCase();
@@ -228,7 +278,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
   private getStatusEmoji(statusCode: number): string {
     if (statusCode >= 500) return '🔥'; // Server errors
-    if (statusCode >= 400) return '⚠️';  // Client errors
+    if (statusCode >= 400) return '⚠️'; // Client errors
     if (statusCode >= 300) return '🔄'; // Redirects
     if (statusCode >= 200) return '✅'; // Success
     return 'ℹ️'; // Informational

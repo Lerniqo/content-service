@@ -2,7 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConceptsService } from './concepts.service';
 import { Neo4jService } from '../common/neo4j/neo4j.service';
 import { Logger } from 'nestjs-pino';
-import { BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 
 describe('ConceptsService', () => {
   let service: ConceptsService;
@@ -71,9 +75,15 @@ describe('ConceptsService', () => {
         .mockResolvedValueOnce({ records: [] }) // no existing relationship
         .mockResolvedValueOnce({ records: [{ get: () => ({}) }] }); // relationship created
 
-      const result = await service.createPrerequisiteRelationship(conceptId, prerequisiteId, adminId);
+      const result = await service.createPrerequisiteRelationship(
+        conceptId,
+        prerequisiteId,
+        adminId,
+      );
 
-      expect(result).toEqual({ message: 'Prerequisite relationship created successfully' });
+      expect(result).toEqual({
+        message: 'Prerequisite relationship created successfully',
+      });
       expect(mockTransaction.commit).toHaveBeenCalled();
       expect(mockTransaction.rollback).not.toHaveBeenCalled();
       expect(mockSession.close).toHaveBeenCalled();
@@ -81,14 +91,14 @@ describe('ConceptsService', () => {
 
     it('should throw BadRequestException when concept ID is empty', async () => {
       await expect(
-        service.createPrerequisiteRelationship('', prerequisiteId, adminId)
+        service.createPrerequisiteRelationship('', prerequisiteId, adminId),
       ).rejects.toThrow(BadRequestException);
       expect(mockTransaction.run).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when prerequisite ID is empty', async () => {
       await expect(
-        service.createPrerequisiteRelationship(conceptId, '', adminId)
+        service.createPrerequisiteRelationship(conceptId, '', adminId),
       ).rejects.toThrow(BadRequestException);
       expect(mockTransaction.run).not.toHaveBeenCalled();
     });
@@ -97,7 +107,11 @@ describe('ConceptsService', () => {
       mockTransaction.run.mockResolvedValueOnce({ records: [] }); // concept does not exist
 
       await expect(
-        service.createPrerequisiteRelationship(conceptId, prerequisiteId, adminId)
+        service.createPrerequisiteRelationship(
+          conceptId,
+          prerequisiteId,
+          adminId,
+        ),
       ).rejects.toThrow(NotFoundException);
 
       expect(mockTransaction.rollback).toHaveBeenCalled();
@@ -111,7 +125,11 @@ describe('ConceptsService', () => {
         .mockResolvedValueOnce({ records: [] }); // prerequisite does not exist
 
       await expect(
-        service.createPrerequisiteRelationship(conceptId, prerequisiteId, adminId)
+        service.createPrerequisiteRelationship(
+          conceptId,
+          prerequisiteId,
+          adminId,
+        ),
       ).rejects.toThrow(NotFoundException);
 
       expect(mockTransaction.rollback).toHaveBeenCalled();
@@ -126,7 +144,11 @@ describe('ConceptsService', () => {
         .mockResolvedValueOnce({ records: [{ get: () => ({}) }] }); // relationship exists
 
       await expect(
-        service.createPrerequisiteRelationship(conceptId, prerequisiteId, adminId)
+        service.createPrerequisiteRelationship(
+          conceptId,
+          prerequisiteId,
+          adminId,
+        ),
       ).rejects.toThrow(BadRequestException);
 
       expect(mockTransaction.rollback).toHaveBeenCalled();
@@ -142,7 +164,11 @@ describe('ConceptsService', () => {
         .mockResolvedValueOnce({ records: [] }); // relationship creation fails
 
       await expect(
-        service.createPrerequisiteRelationship(conceptId, prerequisiteId, adminId)
+        service.createPrerequisiteRelationship(
+          conceptId,
+          prerequisiteId,
+          adminId,
+        ),
       ).rejects.toThrow(InternalServerErrorException);
 
       expect(mockTransaction.rollback).toHaveBeenCalled();
@@ -154,7 +180,11 @@ describe('ConceptsService', () => {
       mockTransaction.run.mockRejectedValue(new Error('Database error'));
 
       await expect(
-        service.createPrerequisiteRelationship(conceptId, prerequisiteId, adminId)
+        service.createPrerequisiteRelationship(
+          conceptId,
+          prerequisiteId,
+          adminId,
+        ),
       ).rejects.toThrow(InternalServerErrorException);
 
       expect(mockTransaction.rollback).toHaveBeenCalled();
@@ -166,7 +196,11 @@ describe('ConceptsService', () => {
       mockTransaction.run.mockRejectedValue(new Error('Database error'));
 
       await expect(
-        service.createPrerequisiteRelationship(conceptId, prerequisiteId, adminId)
+        service.createPrerequisiteRelationship(
+          conceptId,
+          prerequisiteId,
+          adminId,
+        ),
       ).rejects.toThrow(InternalServerErrorException);
 
       expect(mockSession.close).toHaveBeenCalled();
