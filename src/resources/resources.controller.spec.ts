@@ -14,6 +14,7 @@ describe('ResourcesController', () => {
   const mockResourcesService = {
     createResource: jest.fn(),
     updateResource: jest.fn(),
+    deleteResource: jest.fn(),
   };
 
   const mockLogger = {
@@ -147,6 +148,65 @@ describe('ResourcesController', () => {
       await expect(
         controller.update('test-resource-123', mockUpdateResourceDto, mockRequest as any),
       ).rejects.toThrow('Update service error');
+    });
+  });
+
+  describe('delete', () => {
+    const mockRequest = {
+      user: {
+        id: 'test-user-123',
+        role: ['teacher'],
+      },
+    };
+
+    it('should delete a resource successfully', async () => {
+      mockResourcesService.deleteResource.mockResolvedValue(undefined);
+
+      const result = await controller.delete('test-resource-123', mockRequest as any);
+
+      expect(result).toEqual({
+        message: 'Resource deleted successfully',
+        resourceId: 'test-resource-123',
+        deletedAt: expect.any(String),
+      });
+      expect(mockResourcesService.deleteResource).toHaveBeenCalledWith(
+        'test-resource-123',
+        'test-user-123',
+        ['teacher'],
+      );
+    });
+
+    it('should handle service errors during delete', async () => {
+      const error = new Error('Delete service error');
+      mockResourcesService.deleteResource.mockRejectedValue(error);
+
+      await expect(
+        controller.delete('test-resource-123', mockRequest as any),
+      ).rejects.toThrow('Delete service error');
+    });
+
+    it('should allow admin to delete any resource', async () => {
+      const adminRequest = {
+        user: {
+          id: 'admin-user-123',
+          role: ['admin'],
+        },
+      };
+
+      mockResourcesService.deleteResource.mockResolvedValue(undefined);
+
+      const result = await controller.delete('test-resource-123', adminRequest as any);
+
+      expect(result).toEqual({
+        message: 'Resource deleted successfully',
+        resourceId: 'test-resource-123',
+        deletedAt: expect.any(String),
+      });
+      expect(mockResourcesService.deleteResource).toHaveBeenCalledWith(
+        'test-resource-123',
+        'admin-user-123',
+        ['admin'],
+      );
     });
   });
 });

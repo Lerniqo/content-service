@@ -548,6 +548,164 @@ export class ResourcesService {
     }
   }
 
+  async deleteResource(
+    resourceId: string,
+    userId: string,
+    userRole: string[],
+  ): Promise<void> {
+    LoggerUtil.logInfo(
+      this.logger,
+      'ResourcesService',
+      'Deleting resource',
+      {
+        resourceId,
+        userId,
+        userRole,
+      },
+    );
+
+    try {
+      // First, check if resource exists and get current data including file URL
+      const currentResource = await this.getResourceById(resourceId);
+      
+      if (!currentResource) {
+        throw new NotFoundException(`Resource with ID ${resourceId} not found`);
+      }
+
+      // Check authorization: Admin can delete any resource, Teacher can only delete resources they have [:PUBLISHED] relationship with
+      const canDelete = await this.canDeleteResource(userRole, resourceId, userId);
+      if (!canDelete) {
+        throw new ForbiddenException(
+          'Access denied. You can only delete resources that you published.'
+        );
+      }
+
+      // Delete the resource node and all its relationships from Neo4j
+      await this.deleteResourceFromDatabase(resourceId);
+
+      // Schedule asynchronous file deletion from cloud storage
+      const fileUrl = currentResource.url as string;
+      await this.scheduleFileDelection(fileUrl || '', resourceId);
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'ResourcesService',
+        'Resource deleted successfully',
+        { resourceId, userId },
+      );
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'ResourcesService',
+        'Failed to delete resource',
+        error,
+        { resourceId, userId },
+      );
+      throw error;
+    }
+  }
+
+  private async canDeleteResource(
+    userRole: string[],
+    resourceId: string,
+    userId: string,
+  ): Promise<boolean> {
+    // Admin can delete any resource
+    if (userRole.includes('admin')) {
+      return true;
+    }
+
+    // Teacher can only delete resources they have a [:PUBLISHED] relationship with
+    if (userRole.includes('teacher')) {
+      return await this.hasPublishedRelationship(userId, resourceId);
+    }
+
+    return false;
+  }
+
+  private async deleteResourceFromDatabase(resourceId: string): Promise<void> {
+    const query = `
+      MATCH (r:Resource {resourceId: $resourceId})
+      DETACH DELETE r
+      RETURN count(r) as deletedCount
+    `;
+
+    try {
+      const result = (await this.neo4jService.write(query, {
+        resourceId,
+      })) as Record<string, any>[];
+
+      const deletedCount = result[0]?.deletedCount as number || 0;
+      
+      if (deletedCount === 0) {
+        throw new InternalServerErrorException(
+          'Failed to delete resource from database'
+        );
+      }
+
+      LoggerUtil.logDebug(
+        this.logger,
+        'ResourcesService',
+        'Resource and all relationships deleted from database',
+        { resourceId, deletedCount },
+      );
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'ResourcesService',
+        'Error deleting resource from database',
+        error,
+        { resourceId },
+      );
+      
+      throw new InternalServerErrorException(
+        'Failed to delete resource from database'
+      );
+    }
+  }
+
+  private scheduleFileDelection(fileUrl: string, resourceId: string): Promise<void> {
+    return new Promise((resolve) => {
+      try {
+        // TODO: Implement actual background job scheduling for file deletion
+        // This could be implemented using:
+        // - Bull/BullMQ for Redis-based job queues
+        // - AWS SQS for cloud-based queuing
+        // - Database-based job scheduling
+        // - Event-driven architecture with message brokers
+        
+        LoggerUtil.logInfo(
+          this.logger,
+          'ResourcesService',
+          'File deletion scheduled (mock implementation)',
+          { 
+            resourceId,
+            fileUrl,
+            message: 'Actual implementation should use background job processing'
+          },
+        );
+
+        // Simulate async processing - in real implementation, this would be:
+        // await this.jobQueue.add('deleteFile', { fileUrl, resourceId });
+        // or
+        // await this.eventEmitter.emit('resource.file.delete', { fileUrl, resourceId });
+        
+        resolve();
+      } catch (error) {
+        LoggerUtil.logError(
+          this.logger,
+          'ResourcesService',
+          'Failed to schedule file deletion - continuing anyway as database deletion was successful',
+          error,
+          { resourceId, fileUrl },
+        );
+        // Don't throw here - database deletion was successful, 
+        // file cleanup failure shouldn't fail the API call
+        resolve();
+      }
+    });
+  }
+
   private async cleanupPartialResource(resourceId: string): Promise<void> {
     const query = `
       MATCH (r:Resource {resourceId: $resourceId})
