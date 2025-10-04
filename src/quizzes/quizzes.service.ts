@@ -9,8 +9,31 @@ import { PinoLogger } from 'nestjs-pino';
 import { Neo4jService } from '../common/neo4j/neo4j.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { CreateQuizResponseDto } from './dto/create-quiz-response.dto';
+import { QuizResponseDto } from './dto/quiz-response.dto';
+import { QuizQuestionDto } from './dto/quiz-question.dto';
 import { LoggerUtil } from '../common/utils/logger.util';
 import { v4 as uuidv4 } from 'uuid';
+
+interface QuestionData {
+  id: string | null;
+  questionText: string | null;
+  options: string[] | null;
+  correctAnswer: string | null;
+  explanation: string | null;
+  tags: string[] | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+interface QuizQueryResult {
+  id: string;
+  title: string;
+  description: string | null;
+  timeLimit: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+  questions: QuestionData[];
+}
 
 @Injectable()
 export class QuizzesService {
@@ -86,6 +109,111 @@ export class QuizzesService {
       // Cleanup: attempt to remove any partially created data
       await this.cleanupPartialQuiz(quizId);
       
+      throw error;
+    }
+  }
+
+  async getQuizById(quizId: string): Promise<QuizResponseDto> {
+    LoggerUtil.logInfo(
+      this.logger,
+      'QuizzesService',
+      'Fetching quiz by ID with questions',
+      { quizId },
+    );
+
+    const cypher = `
+      MATCH (q:Quiz {id: $quizId})
+      
+      // Get all questions included in this quiz
+      OPTIONAL MATCH (q)-[:INCLUDES]->(question:Question)
+      
+      RETURN 
+        q.id as id,
+        q.title as title,
+        q.description as description,
+        q.timeLimit as timeLimit,
+        q.createdAt as createdAt,
+        q.updatedAt as updatedAt,
+        
+        // Collect questions
+        COLLECT(DISTINCT {
+          id: question.id,
+          questionText: question.questionText,
+          options: question.options,
+          correctAnswer: question.correctAnswer,
+          explanation: question.explanation,
+          tags: question.tags,
+          createdAt: question.createdAt,
+          updatedAt: question.updatedAt
+        }) as questions
+    `;
+
+    try {
+      const result = (await this.neo4jService.read(cypher, { quizId })) as QuizQueryResult[];
+
+      if (!result || result.length === 0) {
+        LoggerUtil.logWarn(
+          this.logger,
+          'QuizzesService',
+          'Quiz not found',
+          { quizId },
+        );
+        throw new NotFoundException(`Quiz with ID ${quizId} not found`);
+      }
+
+      const quizData = result[0];
+
+      // Filter out null questions (when no questions exist)
+      const questions = quizData.questions
+        .filter((question: QuestionData) => question.id !== null)
+        .map(
+          (question: QuestionData) =>
+            new QuizQuestionDto(
+              question.id!,
+              question.questionText!,
+              question.options!,
+              question.correctAnswer!,
+              question.explanation ?? undefined,
+              question.tags ?? undefined,
+              question.createdAt ?? undefined,
+              question.updatedAt ?? undefined,
+            ),
+        );
+
+      const response = new QuizResponseDto(
+        quizData.id,
+        quizData.title,
+        quizData.timeLimit,
+        questions,
+        quizData.description ?? undefined,
+        quizData.createdAt ?? undefined,
+        quizData.updatedAt ?? undefined,
+      );
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'QuizzesService',
+        'Quiz retrieved successfully',
+        {
+          quizId,
+          questionsCount: questions.length,
+          title: response.title,
+        },
+      );
+
+      return response;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      LoggerUtil.logError(
+        this.logger,
+        'QuizzesService',
+        'Failed to retrieve quiz',
+        error,
+        { quizId },
+      );
       throw error;
     }
   }

@@ -3,6 +3,8 @@ import {
   Body,
   Controller,
   Post,
+  Get,
+  Param,
   Req,
   UseGuards,
   HttpCode,
@@ -11,6 +13,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { CreateQuizResponseDto } from './dto/create-quiz-response.dto';
+import { QuizResponseDto } from './dto/quiz-response.dto';
 import { QuizzesService } from './quizzes.service';
 import { PinoLogger } from 'nestjs-pino';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -217,6 +220,188 @@ export class QuizzesController {
           conceptId: createQuizDto.conceptId,
           userId,
         },
+      );
+      throw error;
+    }
+  }
+
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  @Roles('student', 'teacher', 'admin') // All authenticated users can access quizzes
+  @ApiOperation({
+    summary: 'Get quiz by ID',
+    description:
+      'Retrieves a specific quiz with all its questions. This endpoint is protected and requires authentication. All authenticated users (students, teachers, admins) can access quizzes.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Quiz retrieved successfully',
+    type: QuizResponseDto,
+    schema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          format: 'uuid',
+          example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+          description: 'Unique identifier for the quiz',
+        },
+        title: {
+          type: 'string',
+          example: 'Basic Mathematics Quiz',
+          description: 'Title of the quiz',
+        },
+        description: {
+          type: 'string',
+          example: 'A comprehensive quiz covering basic mathematical concepts',
+          description: 'Description of the quiz',
+        },
+        timeLimit: {
+          type: 'number',
+          example: 3600,
+          description: 'Time limit for the quiz in seconds',
+        },
+        questions: {
+          type: 'array',
+          description: 'Array of questions included in this quiz',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                example: 'question-001',
+                description: 'ID of the question',
+              },
+              questionText: {
+                type: 'string',
+                example: 'What is 2 + 2?',
+                description: 'The question text',
+              },
+              options: {
+                type: 'array',
+                items: { type: 'string' },
+                example: ['2', '3', '4', '5'],
+                description: 'Answer options',
+              },
+              correctAnswer: {
+                type: 'string',
+                example: '4',
+                description: 'The correct answer',
+              },
+              explanation: {
+                type: 'string',
+                example: 'Adding 2 + 2 equals 4',
+                description: 'Explanation for the correct answer',
+              },
+              tags: {
+                type: 'array',
+                items: { type: 'string' },
+                example: ['mathematics', 'addition'],
+                description: 'Tags associated with the question',
+              },
+            },
+          },
+        },
+        createdAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-10-04T10:30:00Z',
+          description: 'Creation date of the quiz',
+        },
+        updatedAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-10-04T10:30:00Z',
+          description: 'Last update date of the quiz',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Unauthorized' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Valid user role required',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 403 },
+        message: { type: 'string', example: 'Forbidden resource' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Quiz with specified ID not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: {
+          type: 'string',
+          example: 'Quiz with ID abc123 not found',
+        },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - Database or server error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Internal server error' },
+        error: { type: 'string', example: 'Internal Server Error' },
+      },
+    },
+  })
+  async getQuizById(
+    @Param('id') quizId: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<QuizResponseDto> {
+    const userId = req.user.id;
+
+    LoggerUtil.logInfo(
+      this.logger,
+      'QuizzesController',
+      'Protected quiz request received',
+      { quizId, userId },
+    );
+
+    try {
+      const result = await this.quizzesService.getQuizById(quizId);
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'QuizzesController',
+        'Quiz retrieved successfully',
+        {
+          quizId,
+          userId,
+          questionsCount: result.questions.length,
+          title: result.title,
+        },
+      );
+
+      return result;
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuizzesController',
+        'Failed to retrieve quiz',
+        error,
+        { quizId, userId },
       );
       throw error;
     }
