@@ -17,7 +17,7 @@ class CreateUserDto {
   password: string;
 }
 
-@Controller('example')
+@Controller('api/example')
 export class ExampleController {
   // Example: Successful response
   @Get('success')

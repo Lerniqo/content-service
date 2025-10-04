@@ -13,10 +13,15 @@ describe('ResourcesController', () => {
 
   const mockResourcesService = {
     createResource: jest.fn(),
+    updateResource: jest.fn(),
   };
 
   const mockLogger = {
     setContext: jest.fn(),
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -48,7 +53,7 @@ describe('ResourcesController', () => {
 
   describe('create', () => {
     const mockCreateResourceDto: CreateResourceDto = {
-      id: 'test-resource-123',
+      resourceId: 'test-resource-123',
       name: 'Test Resource',
       type: 'video',
       description: 'A test resource',
@@ -90,6 +95,58 @@ describe('ResourcesController', () => {
       await expect(
         controller.create(mockCreateResourceDto, mockRequest as any),
       ).rejects.toThrow('Service error');
+    });
+  });
+
+  describe('update', () => {
+    const mockUpdateResourceDto = {
+      name: 'Updated Test Resource',
+      description: 'An updated test resource',
+      price: 14.99,
+    };
+
+    const mockRequest = {
+      user: {
+        id: 'test-user-123',
+        role: ['teacher'],
+      },
+    };
+
+    const mockUpdatedResource = {
+      resourceId: 'test-resource-123',
+      name: 'Updated Test Resource',
+      type: 'video',
+      description: 'An updated test resource',
+      url: 'https://example.com/resource',
+      isPublic: true,
+      price: 14.99,
+      tags: ['test', 'example'],
+      publishedBy: 'test-user-123',
+      createdAt: '2024-01-15T10:30:00Z',
+      updatedAt: '2024-01-16T14:45:00Z',
+    };
+
+    it('should update a resource successfully', async () => {
+      mockResourcesService.updateResource.mockResolvedValue(mockUpdatedResource);
+
+      const result = await controller.update('test-resource-123', mockUpdateResourceDto, mockRequest as any);
+
+      expect(result).toBe(mockUpdatedResource);
+      expect(mockResourcesService.updateResource).toHaveBeenCalledWith(
+        'test-resource-123',
+        mockUpdateResourceDto,
+        'test-user-123',
+        ['teacher'],
+      );
+    });
+
+    it('should handle service errors during update', async () => {
+      const error = new Error('Update service error');
+      mockResourcesService.updateResource.mockRejectedValue(error);
+
+      await expect(
+        controller.update('test-resource-123', mockUpdateResourceDto, mockRequest as any),
+      ).rejects.toThrow('Update service error');
     });
   });
 });

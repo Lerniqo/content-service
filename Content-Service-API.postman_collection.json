@@ -57,9 +57,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/health",
+              "raw": "{{base_url}}/api/health",
               "host": ["{{base_url}}"],
-              "path": ["health"]
+              "path": ["api", "health"]
             }
           },
           "response": []
@@ -202,9 +202,9 @@
               "raw": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"name\": \"Introduction to Fractions Video\",\n  \"type\": \"video\",\n  \"description\": \"A comprehensive video explaining fraction operations\",\n  \"url\": \"https://example.com/resources/fractions-intro.mp4\",\n  \"isPublic\": true,\n  \"price\": 9.99,\n  \"tags\": [\"mathematics\", \"fractions\", \"elementary\"],\n  \"conceptId\": \"concept-chapter-001\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/resources",
+              "raw": "{{base_url}}/api/content/resources",
               "host": ["{{base_url}}"],
-              "path": ["resources"]
+              "path": ["api", "content", "resources"]
             }
           },
           "response": []
@@ -224,9 +224,9 @@
               "raw": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"name\": \"Fractions Worksheet\",\n  \"type\": \"document\",\n  \"description\": \"Practice worksheet for fraction operations\",\n  \"url\": \"https://example.com/resources/fractions-worksheet.pdf\",\n  \"isPublic\": false,\n  \"price\": 2.99,\n  \"tags\": [\"mathematics\", \"fractions\", \"worksheet\", \"practice\"],\n  \"conceptId\": \"concept-chapter-001\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/resources", 
+              "raw": "{{base_url}}/api/content/resources", 
               "host": ["{{base_url}}"],
-              "path": ["resources"]
+              "path": ["api", "content", "resources"]
             }
           },
           "response": []
@@ -246,9 +246,9 @@
               "raw": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"name\": \"Basic Fraction Quiz\",\n  \"type\": \"quiz\",\n  \"description\": \"Free interactive quiz on basic fractions\",\n  \"url\": \"https://example.com/quiz/basic-fractions\",\n  \"isPublic\": true,\n  \"tags\": [\"mathematics\", \"fractions\", \"quiz\", \"interactive\"],\n  \"conceptId\": \"concept-chapter-001\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/resources",
+              "raw": "{{base_url}}/api/content/resources",
               "host": ["{{base_url}}"],
-              "path": ["resources"]
+              "path": ["api", "content", "resources"]
             }
           },
           "response": []
@@ -303,9 +303,9 @@
               "raw": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n  \"name\": \"Teacher Created Resource\",\n  \"type\": \"document\",\n  \"description\": \"Resource created by teacher\",\n  \"url\": \"https://example.com/teacher-resource\",\n  \"isPublic\": true,\n  \"conceptId\": \"test-admin-concept\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/resources",
+              "raw": "{{base_url}}/api/content/resources",
               "host": ["{{base_url}}"],
-              "path": ["resources"]
+              "path": ["api", "content", "resources"]
             }
           },
           "response": []
@@ -396,9 +396,9 @@
               "raw": "{\n  \"id\": \"invalid-uuid-format\",\n  \"name\": \"Test Resource\",\n  \"type\": \"video\",\n  \"url\": \"https://example.com/video\",\n  \"isPublic\": true,\n  \"conceptId\": \"invalid-concept-uuid\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/resources",
+              "raw": "{{base_url}}/api/content/resources",
               "host": ["{{base_url}}"],
-              "path": ["resources"]
+              "path": ["api", "content", "resources"]
             }
           },
           "response": []
