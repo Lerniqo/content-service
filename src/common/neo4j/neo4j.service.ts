@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
@@ -13,14 +14,22 @@ export class Neo4jService {
     private readonly configService: ConfigService,
   ) {
     this.logger.setContext(Neo4jService.name);
+    const uri = this.configService.get<string>('NEO4J_URI');
+    const username = this.configService.get<string>('NEO4J_USERNAME');
+    const password = this.configService.get<string>('NEO4J_PASSWORD');
+
+    if (!uri || !username || !password) {
+      throw new Error(
+        'Neo4j credentials not found in environment variables. Please set NEO4J_URI, NEO4J_USERNAME, and NEO4J_PASSWORD in your .env file.'
+      );
+    }
+
     this.driver = neo4j.driver(
-      this.configService.get<string>('NEO4J_URI') || 'bolt://localhost:7687',
-      neo4j.auth.basic(
-        this.configService.get<string>('NEO4J_USERNAME') || 'neo4j',
-        this.configService.get<string>('NEO4J_PASSWORD') || 'password',
-      ),
+      uri,
+      neo4j.auth.basic(username, password),
     );
   }
+
 
   async onModuleInit() {
     try {
