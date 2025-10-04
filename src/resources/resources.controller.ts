@@ -3,6 +3,7 @@ import {
   Controller,
   Post,
   Put,
+  Delete,
   Param,
   Req,
   UseGuards,
@@ -13,6 +14,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { CreateResourceDto } from './dto/create-resource.dto';
 import { CreateResourceResponseDto } from './dto/create-resource-response.dto';
 import { UpdateResourceDto } from './dto/update-resource.dto';
+import { DeleteResourceResponseDto } from './dto/delete-resource-response.dto';
 import { ResourcesService } from './resources.service';
 import { PinoLogger } from 'nestjs-pino';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -418,6 +420,118 @@ export class ResourcesController {
           resourceId,
           userId,
           updates: Object.keys(updateResourceDto),
+        },
+      );
+      throw error;
+    }
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @Roles('teacher', 'admin')
+  @ApiOperation({
+    summary: 'Delete an existing resource',
+    description:
+      'Deletes an existing resource and all its relationships from the Neo4j database. Admin can delete any resource, Teacher can only delete resources they published. The actual file deletion from cloud storage is handled asynchronously.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Resource deleted successfully',
+    type: DeleteResourceResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Unauthorized' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden - Teacher or Admin role required, or Teacher trying to delete resource they do not own',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 403 },
+        message: {
+          type: 'string',
+          example:
+            'Access denied. You can only delete resources that you published.',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Resource with specified ID not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: {
+          type: 'string',
+          example: 'Resource with ID abc123 not found',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - Database or server error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Internal server error' },
+      },
+    },
+  })
+  async delete(
+    @Param('id') resourceId: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<DeleteResourceResponseDto> {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    LoggerUtil.logInfo(
+      this.logger,
+      'ResourcesController',
+      'Deleting resource',
+      {
+        resourceId,
+        userId,
+        userRole,
+      },
+    );
+
+    try {
+      await this.resourcesService.deleteResource(resourceId, userId, userRole);
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'ResourcesController',
+        'Resource deleted successfully',
+        {
+          resourceId,
+          userId,
+        },
+      );
+
+      return new DeleteResourceResponseDto(resourceId);
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'ResourcesController',
+        'Failed to delete resource',
+        error,
+        {
+          resourceId,
+          userId,
         },
       );
       throw error;
