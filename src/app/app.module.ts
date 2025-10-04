@@ -11,6 +11,7 @@ import { ResourcesModule } from '../resources/resources.module';
 import { QuestionsModule } from '../questions/questions.module';
 import { QuizzesModule } from '../quizzes/quizzes.module';
 import { SyllabusModule } from '../syllabus/syllabus.module';
+import { ConceptsModule } from '../concepts/concepts.module';
 import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
 
 @Module({
@@ -48,6 +49,7 @@ import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
     QuestionsModule,
     QuizzesModule,
     SyllabusModule,
+    ConceptsModule,
   ],
     controllers: [AppController],
     providers: [AppService],
@@ -56,7 +58,7 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(MockAuthMiddleware)
-      .exclude('api/content/syllabus')
+      .exclude('api/content/syllabus', 'api/content/concepts/*path')
       .forRoutes('*');
   }
 }
