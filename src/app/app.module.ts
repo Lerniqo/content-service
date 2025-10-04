@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable prettier/prettier */
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
@@ -7,6 +8,8 @@ import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from '../health/health.module';
 import { Neo4jModule } from '../common/neo4j/neo4j.module';
 import { ResourcesModule } from '../resources/resources.module';
+import { QuestionsModule } from '../questions/questions.module';
+import { QuizzesModule } from '../quizzes/quizzes.module';
 import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
 
 @Module({
@@ -41,6 +44,8 @@ import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
     HealthModule,
     Neo4jModule,
     ResourcesModule,
+    QuestionsModule,
+    QuizzesModule,
   ],
     controllers: [AppController],
     providers: [AppService],

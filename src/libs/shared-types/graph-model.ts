@@ -29,4 +29,26 @@ export interface Resource {
   subject?: string;
 }
 
+// Question interface for quiz questions
+export interface Question {
+  id: string;
+  questionText: string;
+  options: string[];
+  correctAnswer: string;
+  explanation?: string;
+  tags?: string[];
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Quiz interface for quiz management
+export interface Quiz {
+  id: string;
+  title: string;
+  description?: string;
+  timeLimit: number; // in seconds
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 
