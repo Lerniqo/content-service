@@ -1,17 +1,18 @@
-# O/L Mathematics Platform - Content Service
+# Content Service - Resource Upload API
 
 ## Overview
 
-The `content-service` is the central library and the "brain" of the educational platform[cite: 1147]. It uses a graph database to model the entire Mathematics syllabus, manage all learning resources (videos, notes, quizzes), and track the knowledge state of every student[cite: 1148].
+The `content-service` is a focused microservice for **educational resource uploading**. It provides a single, robust endpoint for teachers and administrators to upload educational resources (videos, documents, quizzes, etc.) with proper metadata management and storage integration.
 
 ---
 
-### Core Responsibilities
+### Core Functionality
 
-***Syllabus & Knowledge Graph Management:** Manages the entire mathematical syllabus as a graph structure (Neo4j), defining concepts (Particles, Atoms, Molecules) and their relationships (`HAS_PREREQUISITE`, `CONTAINS`)[cite: 1149, 1153, 1160, 1161].
-***Learning Resource Management:** Manages the lifecycle of all learning resources (`Resource`, `Quiz`, `Question` nodes)[cite: 1154, 1155, 1156]. Metadata is stored directly in the graph, while files are stored in blob storage.
-***Student Knowledge State Tracking:** Manages the relationships between students and concepts they have interacted with or mastered (`HAS_MASTERED`, `ATTEMPTED_QUIZ`)[cite: 1168, 1169].
-***Serving Personalized Content:** Provides APIs for clients to retrieve syllabus data, resources, and personalized learning paths[cite: 1229, 1233, 1252].
+**🎯 Resource Upload:** Single `POST /resources` endpoint for uploading educational content
+**🔗 Concept Linking:** Links uploaded resources to existing concepts via Neo4j relationships  
+**👤 User Tracking:** Tracks which user uploaded each resource via API Gateway authentication
+**📁 File Management:** Generates presigned URLs for secure file uploads to cloud storage
+**🏷️ Metadata Management:** Stores comprehensive resource metadata (tags, grade level, pricing, etc.)
 
 ---
 

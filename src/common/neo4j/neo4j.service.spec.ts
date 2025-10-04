@@ -74,9 +74,9 @@ describe('Neo4jService', () => {
     it('should create driver with configuration values', () => {
       configService.get.mockImplementation((key: string) => {
         const config = {
-          'NEO4J_URI': 'bolt://test:7687',
-          'NEO4J_USERNAME': 'testuser',
-          'NEO4J_PASSWORD': 'testpass',
+          NEO4J_URI: 'bolt://test:7687',
+          NEO4J_USERNAME: 'testuser',
+          NEO4J_PASSWORD: 'testpass',
         };
         return config[key];
       });
@@ -86,7 +86,7 @@ describe('Neo4jService', () => {
 
       expect(neo4j.driver).toHaveBeenCalledWith(
         'bolt://test:7687',
-        expect.anything()
+        expect.anything(),
       );
       expect(neo4j.auth.basic).toHaveBeenCalledWith('testuser', 'testpass');
     });
@@ -99,7 +99,7 @@ describe('Neo4jService', () => {
 
       expect(neo4j.driver).toHaveBeenCalledWith(
         'bolt://localhost:7687',
-        expect.anything()
+        expect.anything(),
       );
       expect(neo4j.auth.basic).toHaveBeenCalledWith('neo4j', 'password');
     });
@@ -113,7 +113,9 @@ describe('Neo4jService', () => {
       await service.onModuleInit();
 
       expect(mockDriver.getServerInfo).toHaveBeenCalled();
-      expect(logger.info).toHaveBeenCalledWith(`Connected to Neo4j: ${serverInfo}`);
+      expect(logger.info).toHaveBeenCalledWith(
+        `Connected to Neo4j: ${serverInfo}`,
+      );
     });
 
     it('should handle connection failure', async () => {
@@ -121,7 +123,10 @@ describe('Neo4jService', () => {
       mockDriver.getServerInfo.mockRejectedValue(error);
 
       await expect(service.onModuleInit()).rejects.toThrow('Connection failed');
-      expect(logger.error).toHaveBeenCalledWith('Failed to connect to Neo4j', error);
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to connect to Neo4j',
+        error,
+      );
     });
   });
 
@@ -164,9 +169,7 @@ describe('Neo4jService', () => {
     });
 
     it('should execute read query without params', async () => {
-      const mockRecords = [
-        { toObject: () => ({ count: 5 }) },
-      ];
+      const mockRecords = [{ toObject: () => ({ count: 5 }) }];
       const mockResult = { records: mockRecords };
       mockSession.run.mockResolvedValue(mockResult as any);
 
@@ -185,7 +188,10 @@ describe('Neo4jService', () => {
       const cypher = 'INVALID QUERY';
 
       await expect(service.read(cypher)).rejects.toThrow('Query failed');
-      expect(logger.error).toHaveBeenCalledWith('Failed to execute Cypher query', error);
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to execute Cypher query',
+        error,
+      );
       expect(mockSession.close).toHaveBeenCalled();
     });
 
@@ -205,9 +211,7 @@ describe('Neo4jService', () => {
     });
 
     it('should execute write query successfully', async () => {
-      const mockRecords = [
-        { toObject: () => ({ id: 1, name: 'Created' }) },
-      ];
+      const mockRecords = [{ toObject: () => ({ id: 1, name: 'Created' }) }];
       const mockResult = { records: mockRecords };
       mockSession.run.mockResolvedValue(mockResult as any);
 
@@ -242,7 +246,10 @@ describe('Neo4jService', () => {
       const cypher = 'CREATE (n:Person)';
 
       await expect(service.write(cypher)).rejects.toThrow('Write failed');
-      expect(logger.error).toHaveBeenCalledWith('Failed to execute Cypher query', error);
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to execute Cypher query',
+        error,
+      );
       expect(mockSession.close).toHaveBeenCalled();
     });
 

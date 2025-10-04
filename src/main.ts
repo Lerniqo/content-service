@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app/app.module';
@@ -7,44 +8,51 @@ import { LoggerUtil } from './common/utils/logger.util';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    bufferLogs: true
+    bufferLogs: true,
   });
-  
+
   // Get PinoLogger instance and create the filter with it
   const pinoLogger = await app.resolve(PinoLogger);
   app.useGlobalFilters(new HttpExceptionFilter(pinoLogger));
-  
+
   // Configure global validation pipe
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true, // Remove properties that are not in the DTO
-    forbidNonWhitelisted: true, // Throw error if non-whitelisted properties are present
-    transform: true, // Automatically transform payloads to DTO instances
-    transformOptions: {
-      enableImplicitConversion: true, // Automatically convert primitive types
-    },
-    validationError: {
-      target: false, // Don't expose the target object in validation errors
-      value: false, // Don't expose the value in validation errors
-    }
-  }));
-  
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Remove properties that are not in the DTO
+      forbidNonWhitelisted: true, // Throw error if non-whitelisted properties are present
+      transform: true, // Automatically transform payloads to DTO instances
+      transformOptions: {
+        enableImplicitConversion: true, // Automatically convert primitive types
+      },
+      validationError: {
+        target: false, // Don't expose the target object in validation errors
+        value: false, // Don't expose the value in validation errors
+      },
+    }),
+  );
+
   const port = process.env.PORT ?? 3000;
-  
+
   // Log application startup
-  LoggerUtil.logInfo(pinoLogger, 'Application', 'Starting Content Service', { 
-    port, 
-    environment: process.env.NODE_ENV || 'development' 
+  LoggerUtil.logInfo(pinoLogger, 'Application', 'Starting Content Service', {
+    port,
+    environment: process.env.NODE_ENV || 'development',
   });
-  
+
   await app.listen(port);
-  
-  LoggerUtil.logInfo(pinoLogger, 'Application', 'Content Service started successfully', { 
-    port, 
-    url: `http://localhost:${port}` 
-  });
+
+  LoggerUtil.logInfo(
+    pinoLogger,
+    'Application',
+    'Content Service started successfully',
+    {
+      port,
+      url: `http://localhost:${port}`,
+    },
+  );
 }
 
-bootstrap().catch(error => {
+bootstrap().catch((error) => {
   console.error('❌ Failed to start application:', error);
   process.exit(1);
 });

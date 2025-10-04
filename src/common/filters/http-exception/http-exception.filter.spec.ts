@@ -70,8 +70,11 @@ describe('HttpExceptionFilter', () => {
 
   describe('HttpException handling', () => {
     it('should handle HttpException with string response', () => {
-      const exception = new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
-      
+      const exception = new HttpException(
+        'Bad Request',
+        HttpStatus.BAD_REQUEST,
+      );
+
       filter.catch(exception, mockHost);
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
@@ -93,8 +96,11 @@ describe('HttpExceptionFilter', () => {
         error: 'Validation Error',
         statusCode: 400,
       };
-      const exception = new HttpException(exceptionResponse, HttpStatus.BAD_REQUEST);
-      
+      const exception = new HttpException(
+        exceptionResponse,
+        HttpStatus.BAD_REQUEST,
+      );
+
       filter.catch(exception, mockHost);
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
@@ -113,7 +119,7 @@ describe('HttpExceptionFilter', () => {
     it('should handle validation errors with BAD_REQUEST status', () => {
       const error = new Error('Validation failed');
       error.name = 'ValidationError';
-      
+
       filter.catch(error, mockHost);
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
@@ -129,7 +135,7 @@ describe('HttpExceptionFilter', () => {
     it('should handle unauthorized errors with UNAUTHORIZED status', () => {
       const error = new Error('Invalid token');
       error.name = 'UnauthorizedError';
-      
+
       filter.catch(error, mockHost);
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);
@@ -137,7 +143,7 @@ describe('HttpExceptionFilter', () => {
 
     it('should handle unknown errors with INTERNAL_SERVER_ERROR status', () => {
       const error = new Error('Database connection failed');
-      
+
       filter.catch(error, mockHost);
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -153,8 +159,11 @@ describe('HttpExceptionFilter', () => {
 
   describe('Logging', () => {
     it('should log server errors (5xx) as error level', () => {
-      const exception = new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
-      
+      const exception = new HttpException(
+        'Internal Server Error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+
       filter.catch(exception, mockHost);
 
       expect(mockPinoLogger.error).toHaveBeenCalledWith(
@@ -168,8 +177,11 @@ describe('HttpExceptionFilter', () => {
     });
 
     it('should log client errors (4xx) as warning level', () => {
-      const exception = new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
-      
+      const exception = new HttpException(
+        'Bad Request',
+        HttpStatus.BAD_REQUEST,
+      );
+
       filter.catch(exception, mockHost);
 
       expect(mockPinoLogger.warn).toHaveBeenCalledWith(
@@ -192,8 +204,11 @@ describe('HttpExceptionFilter', () => {
         token: 'bearer-token',
       };
 
-      const exception = new HttpException('Bad Request', HttpStatus.BAD_REQUEST);
-      
+      const exception = new HttpException(
+        'Bad Request',
+        HttpStatus.BAD_REQUEST,
+      );
+
       filter.catch(exception, mockHost);
 
       expect(mockPinoLogger.warn).toHaveBeenCalledWith(
@@ -212,7 +227,7 @@ describe('HttpExceptionFilter', () => {
   describe('Response structure', () => {
     it('should include all required fields in error response', () => {
       const exception = new HttpException('Test Error', HttpStatus.BAD_REQUEST);
-      
+
       filter.catch(exception, mockHost);
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -231,7 +246,7 @@ describe('HttpExceptionFilter', () => {
     it('should handle request without request-id header', () => {
       mockRequest.headers = { 'user-agent': 'test-agent' };
       const exception = new HttpException('Test Error', HttpStatus.BAD_REQUEST);
-      
+
       filter.catch(exception, mockHost);
 
       expect(mockResponse.json).toHaveBeenCalledWith(

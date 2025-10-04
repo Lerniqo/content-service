@@ -38,31 +38,31 @@ export class ExampleController {
   @Post('users')
   createUser(@Body() createUserDto: CreateUserDto) {
     const errors: string[] = [];
-    
+
     if (!createUserDto.username) {
       errors.push('username is required');
     }
-    
+
     if (!createUserDto.email || !createUserDto.email.includes('@')) {
       errors.push('email must be a valid email address');
     }
-    
+
     if (!createUserDto.password || createUserDto.password.length < 8) {
       errors.push('password must be at least 8 characters long');
     }
-    
+
     if (errors.length > 0) {
       throw new BadRequestException({
         message: errors,
         error: 'Validation Error',
       });
     }
-    
-    return { 
-      id: 1, 
-      username: createUserDto.username, 
+
+    return {
+      id: 1,
+      username: createUserDto.username,
       email: createUserDto.email,
-      message: 'User created successfully' 
+      message: 'User created successfully',
     };
   }
 
@@ -80,7 +80,7 @@ export class ExampleController {
         HttpStatus.CONFLICT,
       );
     }
-    
+
     return { message: 'User created successfully' };
   }
 
@@ -93,7 +93,7 @@ export class ExampleController {
     throw error;
   }
 
-  // Example: Unauthorized Error (401) 
+  // Example: Unauthorized Error (401)
   @Get('protected')
   getProtected() {
     const error = new Error('Invalid or expired token');
@@ -119,7 +119,7 @@ export class ExampleController {
       },
       {
         field: 'age',
-        code: 'OUT_OF_RANGE', 
+        code: 'OUT_OF_RANGE',
         message: 'Age must be between 18 and 100',
         value: data.age,
       },

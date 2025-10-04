@@ -1,0 +1,585 @@
+{
+  "info": {
+    "name": "Content Service API - Complete Examples",
+    "description": "Complete testing examples for Content Service API with proper Neo4j schema",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "admin_user_id",
+      "value": "admin-123"
+    },
+    {
+      "key": "teacher_user_id", 
+      "value": "teacher-456"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Hello World",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Create Learning Hierarchy",
+      "item": [
+        {
+          "name": "1. Create Subject (OLM001)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{admin_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "admin"
+              },
+              {
+                "key": "x-user-name",
+                "value": "Admin User"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conceptId\": \"olm001-subject\",\n  \"name\": \"Ordinary Level Mathematics (OLM001)\",\n  \"type\": \"Subject\",\n  \"description\": \"Core mathematics curriculum for ordinary level\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          }
+        },
+        {
+          "name": "2. Create Matter (Numbers)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{admin_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "admin"
+              },
+              {
+                "key": "x-user-name",
+                "value": "Admin User"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conceptId\": \"mat001-numbers\",\n  \"name\": \"Numbers (MAT001)\",\n  \"type\": \"Matter\",\n  \"description\": \"Fundamental concepts of numbers\",\n  \"parentId\": \"olm001-subject\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          }
+        },
+        {
+          "name": "3. Create Molecule (Fractions)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{admin_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "admin"
+              },
+              {
+                "key": "x-user-name",
+                "value": "Admin User"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conceptId\": \"mol001-fractions\",\n  \"name\": \"Fractions (MOL001)\",\n  \"type\": \"Molecule\",\n  \"description\": \"Operations and properties of fractions\",\n  \"parentId\": \"mat001-numbers\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          }
+        },
+        {
+          "name": "4. Create Atom (Multiplication)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{admin_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "admin"
+              },
+              {
+                "key": "x-user-name",
+                "value": "Admin User"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conceptId\": \"atm001-multiplication\",\n  \"name\": \"Multiplication of Fractions (ATM001)\",\n  \"type\": \"Atom\",\n  \"description\": \"Multiplying fractions\",\n  \"parentId\": \"mol001-fractions\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          }
+        },
+        {
+          "name": "5. Create Particle (Rules)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{admin_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "admin"
+              },
+              {
+                "key": "x-user-name",
+                "value": "Admin User"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conceptId\": \"par001-fraction-multiplication\",\n  \"name\": \"fraction-multiplication (PAR001)\",\n  \"type\": \"Particle\",\n  \"description\": \"Rules for multiplying fractions\",\n  \"parentId\": \"atm001-multiplication\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Concept Management",
+      "item": [
+        {
+          "name": "Update Concept",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{admin_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "admin"
+              },
+              {
+                "key": "x-user-name",
+                "value": "Admin User"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Advanced Fractions (MOL001)\",\n  \"description\": \"Updated description for advanced fraction operations\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts/mol001-fractions",
+              "host": ["{{base_url}}"],
+              "path": ["concepts", "mol001-fractions"]
+            }
+          }
+        },
+        {
+          "name": "Create Prerequisite",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{admin_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "admin"
+              },
+              {
+                "key": "x-user-name",
+                "value": "Admin User"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prerequisiteId\": \"par001-fraction-multiplication\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts/atm001-multiplication/prerequisites",
+              "host": ["{{base_url}}"],
+              "path": ["concepts", "atm001-multiplication", "prerequisites"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Resource Management",
+      "item": [
+        {
+          "name": "Create Video Resource (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{admin_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "admin"
+              },
+              {
+                "key": "x-user-name",
+                "value": "Admin User"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceId\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"name\": \"Introduction to Fractions Video\",\n  \"type\": \"video\",\n  \"description\": \"A comprehensive video explaining fraction operations\",\n  \"url\": \"https://example.com/resources/fractions-intro.mp4\",\n  \"isPublic\": true,\n  \"price\": 9.99,\n  \"tags\": [\"mathematics\", \"fractions\", \"elementary\"],\n  \"conceptId\": \"mol001-fractions\",\n  \"gradeLevel\": \"Grade 8\",\n  \"subject\": \"Mathematics\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/resources",
+              "host": ["{{base_url}}"],
+              "path": ["resources"]
+            }
+          }
+        },
+        {
+          "name": "Create Document Resource (Teacher)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{teacher_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "teacher"
+              },
+              {
+                "key": "x-user-name",
+                "value": "Teacher User"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceId\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"name\": \"Fractions Worksheet\",\n  \"type\": \"document\",\n  \"description\": \"Practice worksheet for fraction operations\",\n  \"url\": \"https://example.com/resources/fractions-worksheet.pdf\",\n  \"isPublic\": false,\n  \"price\": 2.99,\n  \"tags\": [\"mathematics\", \"fractions\", \"worksheet\", \"practice\"],\n  \"conceptId\": \"mol001-fractions\",\n  \"gradeLevel\": \"Grade 8\",\n  \"subject\": \"Mathematics\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/resources",
+              "host": ["{{base_url}}"],
+              "path": ["resources"]
+            }
+          }
+        },
+        {
+          "name": "Create Free Quiz Resource",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{teacher_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "teacher"
+              },
+              {
+                "key": "x-user-name",
+                "value": "Teacher User"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceId\": \"550e8400-e29b-41d4-a716-446655440003\",\n  \"name\": \"Basic Fraction Quiz\",\n  \"type\": \"quiz\",\n  \"description\": \"Free interactive quiz on basic fractions\",\n  \"url\": \"https://example.com/quiz/basic-fractions\",\n  \"isPublic\": true,\n  \"tags\": [\"mathematics\", \"fractions\", \"quiz\", \"interactive\"],\n  \"conceptId\": \"mol001-fractions\",\n  \"gradeLevel\": \"Grade 8\",\n  \"subject\": \"Mathematics\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/resources",
+              "host": ["{{base_url}}"],
+              "path": ["resources"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Authorization Tests",
+      "item": [
+        {
+          "name": "Test No Auth Headers (Default Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conceptId\": \"test-default-concept\",\n  \"name\": \"Default Auth Test\",\n  \"type\": \"Particle\",\n  \"description\": \"Testing default authentication\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          }
+        },
+        {
+          "name": "Test Direct User Header",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "user",
+                "value": "{\"id\": \"dev-admin-123\", \"role\": [\"admin\"], \"username\": \"dev-admin\"}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conceptId\": \"test-dev-header\",\n  \"name\": \"Dev Header Test\",\n  \"type\": \"Particle\",\n  \"description\": \"Testing direct user header auth\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          }
+        },
+        {
+          "name": "Test Teacher Role Restriction (Should Fail)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{teacher_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "teacher"
+              },
+              {
+                "key": "x-user-name",
+                "value": "Teacher User"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conceptId\": \"teacher-fail-concept\",\n  \"name\": \"Teacher Should Not Create Concepts\",\n  \"type\": \"Particle\",\n  \"description\": \"This should fail with 403 Forbidden\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Error Testing",
+      "item": [
+        {
+          "name": "Invalid Concept Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{admin_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "admin"
+              },
+              {
+                "key": "x-user-name",
+                "value": "Admin User"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conceptId\": \"invalid-concept\",\n  \"name\": \"Invalid Type Test\",\n  \"type\": \"InvalidType\",\n  \"description\": \"Testing invalid concept type\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          }
+        },
+        {
+          "name": "Missing Required Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{admin_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "admin"
+              },
+              {
+                "key": "x-user-name",
+                "value": "Admin User"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Incomplete Concept\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          }
+        },
+        {
+          "name": "Invalid Resource Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{teacher_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "teacher"
+              },
+              {
+                "key": "x-user-name",
+                "value": "Teacher User"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceId\": \"550e8400-e29b-41d4-a716-446655440004\",\n  \"name\": \"Invalid Resource\",\n  \"type\": \"invalid-type\",\n  \"url\": \"https://example.com/resource\",\n  \"isPublic\": true,\n  \"conceptId\": \"mol001-fractions\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/resources",
+              "host": ["{{base_url}}"],
+              "path": ["resources"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

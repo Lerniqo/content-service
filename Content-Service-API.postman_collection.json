@@ -1,0 +1,409 @@
+{
+  "info": {
+    "name": "Content Service API - API Gateway Integration",
+    "description": "API collection for NestJS Content Service with API Gateway authentication headers",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "admin_user_id",
+      "value": "admin-123",
+      "type": "string",
+      "description": "Admin user ID from API Gateway"
+    },
+    {
+      "key": "admin_user_roles",
+      "value": "admin",
+      "type": "string",
+      "description": "Admin user roles from API Gateway"
+    },
+    {
+      "key": "admin_user_name",
+      "value": "Admin User",
+      "type": "string",
+      "description": "Admin user name from API Gateway"
+    },
+    {
+      "key": "teacher_user_id",
+      "value": "teacher-456",
+      "type": "string",
+      "description": "Teacher user ID from API Gateway"
+    },
+    {
+      "key": "teacher_user_roles",
+      "value": "teacher",
+      "type": "string",
+      "description": "Teacher user roles from API Gateway"
+    },
+    {
+      "key": "teacher_user_name",
+      "value": "Teacher User",
+      "type": "string",
+      "description": "Teacher user name from API Gateway"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Hello World", 
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Concepts Management (Admin Only)",
+      "item": [
+        {
+          "name": "Create Concept",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "{{admin_user_id}}"
+              },
+              {
+                "key": "x-user-roles",
+                "value": "{{admin_user_roles}}"
+              },
+              {
+                "key": "x-user-name",
+                "value": "{{admin_user_name}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"concept-math-001\",\n  \"name\": \"Basic Mathematics\",\n  \"type\": \"Subject\",\n  \"parentId\": \"concept-root\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Concept - Chapter",
+          "request": {
+            "method": "POST", 
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"concept-chapter-001\",\n  \"name\": \"Fractions\",\n  \"type\": \"Chapter\",\n  \"parentId\": \"concept-math-001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Concept",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type", 
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Advanced Mathematics\",\n  \"type\": \"Subject\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts/concept-math-001",
+              "host": ["{{base_url}}"],
+              "path": ["concepts", "concept-math-001"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Prerequisite Relationship",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw", 
+              "raw": "{\n  \"prerequisiteId\": \"concept-basic-math\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts/concept-chapter-001/prerequisites",
+              "host": ["{{base_url}}"],
+              "path": ["concepts", "concept-chapter-001", "prerequisites"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Resources Management (Teacher/Admin)",
+      "item": [
+        {
+          "name": "Create Resource - Video",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"name\": \"Introduction to Fractions Video\",\n  \"type\": \"video\",\n  \"description\": \"A comprehensive video explaining fraction operations\",\n  \"url\": \"https://example.com/resources/fractions-intro.mp4\",\n  \"isPublic\": true,\n  \"price\": 9.99,\n  \"tags\": [\"mathematics\", \"fractions\", \"elementary\"],\n  \"conceptId\": \"concept-chapter-001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/resources",
+              "host": ["{{base_url}}"],
+              "path": ["resources"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Resource - Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"name\": \"Fractions Worksheet\",\n  \"type\": \"document\",\n  \"description\": \"Practice worksheet for fraction operations\",\n  \"url\": \"https://example.com/resources/fractions-worksheet.pdf\",\n  \"isPublic\": false,\n  \"price\": 2.99,\n  \"tags\": [\"mathematics\", \"fractions\", \"worksheet\", \"practice\"],\n  \"conceptId\": \"concept-chapter-001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/resources", 
+              "host": ["{{base_url}}"],
+              "path": ["resources"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Free Resource",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"name\": \"Basic Fraction Quiz\",\n  \"type\": \"quiz\",\n  \"description\": \"Free interactive quiz on basic fractions\",\n  \"url\": \"https://example.com/quiz/basic-fractions\",\n  \"isPublic\": true,\n  \"tags\": [\"mathematics\", \"fractions\", \"quiz\", \"interactive\"],\n  \"conceptId\": \"concept-chapter-001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/resources",
+              "host": ["{{base_url}}"],
+              "path": ["resources"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authorization Tests",
+      "item": [
+        {
+          "name": "Test Admin Access - Create Concept",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"test-admin-concept\",\n  \"name\": \"Admin Test Concept\",\n  \"type\": \"Topic\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test Teacher Access - Create Resource",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization", 
+                "value": "Bearer {{teacher_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n  \"name\": \"Teacher Created Resource\",\n  \"type\": \"document\",\n  \"description\": \"Resource created by teacher\",\n  \"url\": \"https://example.com/teacher-resource\",\n  \"isPublic\": true,\n  \"conceptId\": \"test-admin-concept\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/resources",
+              "host": ["{{base_url}}"],
+              "path": ["resources"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test Unauthorized Access",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"unauthorized-concept\",\n  \"name\": \"Unauthorized Concept\",\n  \"type\": \"Topic\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Testing",
+      "item": [
+        {
+          "name": "Invalid JSON Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"invalid-concept\",\n  \"name\": \"\",\n  \"type\": \"InvalidType\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Missing Required Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Incomplete Concept\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["concepts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid UUID Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"invalid-uuid-format\",\n  \"name\": \"Test Resource\",\n  \"type\": \"video\",\n  \"url\": \"https://example.com/video\",\n  \"isPublic\": true,\n  \"conceptId\": \"invalid-concept-uuid\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/resources",
+              "host": ["{{base_url}}"],
+              "path": ["resources"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,10 +1,12 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable prettier/prettier */
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from '../health/health.module';
 import { Neo4jModule } from '../common/neo4j/neo4j.module';
-import { ConceptsModule } from '../concepts/concepts.module';
+import { ResourcesModule } from '../resources/resources.module';
 import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
 
 @Module({
@@ -35,7 +37,11 @@ import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
         },
         customErrorMessage: (req: any, res: any) => `❌ ${req.method} ${req.url} → ${res.statusCode}`,
       },
-    }), HealthModule, Neo4jModule, ConceptsModule],
+    }),
+    HealthModule,
+    Neo4jModule,
+    ResourcesModule,
+  ],
     controllers: [AppController],
     providers: [AppService],
 })
