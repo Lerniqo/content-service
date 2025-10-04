@@ -10,6 +10,7 @@ import { Neo4jModule } from '../common/neo4j/neo4j.module';
 import { ResourcesModule } from '../resources/resources.module';
 import { QuestionsModule } from '../questions/questions.module';
 import { QuizzesModule } from '../quizzes/quizzes.module';
+import { SyllabusModule } from '../syllabus/syllabus.module';
 import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
 
 @Module({
@@ -46,6 +47,7 @@ import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
     ResourcesModule,
     QuestionsModule,
     QuizzesModule,
+    SyllabusModule,
   ],
     controllers: [AppController],
     providers: [AppService],
@@ -54,6 +56,7 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(MockAuthMiddleware)
+      .exclude('api/content/syllabus')
       .forRoutes('*');
   }
 }
