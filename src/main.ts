@@ -5,7 +5,7 @@ import { AppModule } from './app/app.module';
 import { Logger, PinoLogger } from 'nestjs-pino';
 import { HttpExceptionFilter } from './common/filters/http-exception/http-exception.filter';
 import { LoggerUtil } from './common/utils/logger.util';
-
+//
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
@@ -14,6 +14,17 @@ async function bootstrap() {
   // Get PinoLogger instance and create the filter with it
   const pinoLogger = await app.resolve(PinoLogger);
   app.useGlobalFilters(new HttpExceptionFilter(pinoLogger));
+
+  // Enable CORS
+  app.enableCors({
+    origin: [
+      'http://localhost:3000', // Local development
+      'https://main.ddwyki3l42m0e.amplifyapp.com', // Add your production frontend domain
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    credentials: true, // Enable if you need to send cookies/auth headers
+  });
 
   // Configure global validation pipe
   app.useGlobalPipes(
