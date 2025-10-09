@@ -21,7 +21,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  
+          aws-region: eu-north-1  
 
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
@@ -35,7 +35,7 @@ jobs:
       - name: Tag Docker image for ECR
         run: |
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          REGION=us-east-1
+          REGION=eu-north-1
           IMAGE_NAME=webapp-dev-content-service
           IMAGE_TAG=${GITHUB_SHA::8}
           docker tag $IMAGE_NAME:$IMAGE_TAG $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$IMAGE_NAME:latest
@@ -43,7 +43,7 @@ jobs:
       - name: Push Docker image to ECR
         run: |
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          REGION=us-east-1
+          REGION=eu-north-1
           IMAGE_NAME=webapp-dev-content-service
           IMAGE_TAG=${GITHUB_SHA::8}
           docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$IMAGE_NAME:latest
@@ -51,7 +51,7 @@ jobs:
       - name: Output image URI
         run: |
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          REGION=us-east-1
+          REGION=eu-north-1
           IMAGE_NAME=webapp-dev-content-service
           IMAGE_TAG=${GITHUB_SHA::8}
           echo "Image URI: $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$IMAGE_NAME:$IMAGE_TAG"
