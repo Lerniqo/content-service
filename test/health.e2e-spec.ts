@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
@@ -26,10 +27,13 @@ describe('HealthController (e2e)', () => {
         .expect(200)
         .expect((res) => {
           // The service returns a JSON string, so parse it
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           const healthData = JSON.parse(res.text);
           expect(healthData).toHaveProperty('status');
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           expect(healthData.status).toBe('ok');
           expect(healthData).toHaveProperty('service');
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           expect(healthData.service).toBe('content-service');
         });
     });

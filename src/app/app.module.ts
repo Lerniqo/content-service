@@ -1,12 +1,13 @@
-/* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable prettier/prettier */
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from '../health/health.module';
 import { Neo4jModule } from '../common/neo4j/neo4j.module';
+import { KafkaModule } from '../common/kafka/kafka.module';
 import { ResourcesModule } from '../resources/resources.module';
 import { QuestionsModule } from '../questions/questions.module';
 import { QuizzesModule } from '../quizzes/quizzes.module';
@@ -15,7 +16,12 @@ import { ConceptsModule } from '../concepts/concepts.module';
 import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
 
 @Module({
-    imports: [LoggerModule.forRoot({
+    imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: process.env.NODE_ENV === 'production' ? '.env.prod' : '.env',
+    }),
+    LoggerModule.forRoot({
       pinoHttp: {
         transport: process.env.NODE_ENV === 'production' ? undefined : {
           target: 'pino-pretty',
@@ -45,14 +51,15 @@ import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
     }),
     HealthModule,
     Neo4jModule,
+    KafkaModule.forRootAsync(),
     ResourcesModule,
     QuestionsModule,
     QuizzesModule,
     SyllabusModule,
     ConceptsModule,
   ],
-    controllers: [AppController],
-    providers: [AppService],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/unbound-method */
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConceptsService } from './concepts.service';
 import { Neo4jService } from '../common/neo4j/neo4j.service';
@@ -14,6 +16,10 @@ describe('ConceptsService', () => {
 
   const mockLogger = {
     setContext: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -82,7 +88,9 @@ describe('ConceptsService', () => {
 
       // Assert
       expect(neo4jService.read).toHaveBeenCalledWith(
-        expect.stringContaining('MATCH (c:SyllabusConcept {conceptId: $conceptId})'),
+        expect.stringContaining(
+          'MATCH (c:SyllabusConcept {conceptId: $conceptId})',
+        ),
         { conceptId },
       );
       expect(result.conceptId).toBe(conceptId);
@@ -101,7 +109,9 @@ describe('ConceptsService', () => {
         NotFoundException,
       );
       expect(neo4jService.read).toHaveBeenCalledWith(
-        expect.stringContaining('MATCH (c:SyllabusConcept {conceptId: $conceptId})'),
+        expect.stringContaining(
+          'MATCH (c:SyllabusConcept {conceptId: $conceptId})',
+        ),
         { conceptId },
       );
     });
@@ -116,7 +126,9 @@ describe('ConceptsService', () => {
           type: 'Particle',
           description: 'A basic concept',
           createdAt: '2024-10-04T10:30:00Z',
-          prerequisites: [{ conceptId: null, name: null, type: null, description: null }],
+          prerequisites: [
+            { conceptId: null, name: null, type: null, description: null },
+          ],
           resources: [{ resourceId: null, name: null, type: null }],
         },
       ];

@@ -31,7 +31,7 @@ describe('Neo4jService Integration', () => {
         .overrideProvider(ConfigService)
         .useValue({
           get: jest.fn().mockImplementation((key: string) => {
-            const config = {
+            const config: Record<string, string> = {
               NEO4J_URI: process.env.NEO4J_URI || 'bolt://localhost:7687',
               NEO4J_USERNAME: process.env.NEO4J_USERNAME || 'neo4j',
               NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || 'password',
@@ -63,28 +63,30 @@ describe('Neo4jService Integration', () => {
 
     it('should connect to Neo4j database', async () => {
       // Test basic connectivity
-      const result = await service.read('RETURN "Hello Neo4j" as message');
+      const result = (await service.read(
+        'RETURN "Hello Neo4j" as message',
+      )) as Array<{ message: string }>;
       expect(result).toEqual([{ message: 'Hello Neo4j' }]);
     });
 
     it('should create and read nodes', async () => {
       // Create a test node
-      const createResult = await service.write(
+      const createResult = (await service.write(
         'CREATE (n:TestNode {name: $name, id: $id}) RETURN n',
         { name: 'Integration Test', id: 1 },
-      );
+      )) as Array<{ n: { properties: { name: string; id: number } } }>;
 
       expect(createResult).toHaveLength(1);
-      expect(createResult[0].n.properties.name).toBe('Integration Test');
+      expect(createResult[0]?.n?.properties?.name).toBe('Integration Test');
 
       // Read the created node
-      const readResult = await service.read(
+      const readResult = (await service.read(
         'MATCH (n:TestNode {id: $id}) RETURN n',
         { id: 1 },
-      );
+      )) as Array<{ n: { properties: { name: string; id: number } } }>;
 
       expect(readResult).toHaveLength(1);
-      expect(readResult[0].n.properties.name).toBe('Integration Test');
+      expect(readResult[0]?.n?.properties?.name).toBe('Integration Test');
     });
 
     it('should handle multiple operations', async () => {
@@ -95,12 +97,12 @@ describe('Neo4jService Integration', () => {
       );
 
       // Count nodes
-      const countResult = await service.read(
+      const countResult = (await service.read(
         'MATCH (n:TestNode) RETURN count(n) as count',
-      );
+      )) as Array<{ count: number }>;
 
-      expect(countResult[0].count).toEqual(expect.any(Number));
-      expect(countResult[0].count).toBeGreaterThanOrEqual(2);
+      expect(countResult[0]?.count).toEqual(expect.any(Number));
+      expect(countResult[0]?.count).toBeGreaterThanOrEqual(2);
     });
 
     it('should handle complex queries', async () => {
@@ -113,14 +115,14 @@ describe('Neo4jService Integration', () => {
       `);
 
       // Query relationships
-      const result = await service.read(`
+      const result = (await service.read(`
         MATCH (p1:Person)-[:KNOWS]->(p2:Person)
         RETURN p1.name as person1, p2.name as person2
-      `);
+      `)) as Array<{ person1: string; person2: string }>;
 
       expect(result).toHaveLength(1);
-      expect(result[0].person1).toBe('Alice');
-      expect(result[0].person2).toBe('Bob');
+      expect(result[0]?.person1).toBe('Alice');
+      expect(result[0]?.person2).toBe('Bob');
 
       // Clean up
       await service.write('MATCH (p:Person) DETACH DELETE p');
@@ -130,13 +132,15 @@ describe('Neo4jService Integration', () => {
       // Test that failed queries don't affect database state
       try {
         await service.write('INVALID CYPHER QUERY');
-      } catch (error) {
+      } catch {
         // Expected to fail
       }
 
       // Verify database is still functional
-      const result = await service.read('RETURN "Database OK" as status');
-      expect(result[0].status).toBe('Database OK');
+      const result = (await service.read(
+        'RETURN "Database OK" as status',
+      )) as Array<{ status: string }>;
+      expect(result[0]?.status).toBe('Database OK');
     });
   });
 
@@ -153,7 +157,7 @@ describe('Neo4jService Integration', () => {
 
       mockConfigService = {
         get: jest.fn().mockImplementation((key: string) => {
-          const config = {
+          const config: Record<string, string> = {
             NEO4J_URI: 'bolt://test:7687',
             NEO4J_USERNAME: 'testuser',
             NEO4J_PASSWORD: 'testpass',

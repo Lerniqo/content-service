@@ -149,7 +149,8 @@ export class QuizzesService {
     `;
 
     try {
-      const result = (await this.neo4jService.read(cypher, { quizId })) as QuizQueryResult[];
+      const rawResult = await this.neo4jService.read(cypher, { quizId }) as unknown;
+      const result = rawResult as QuizQueryResult[];
 
       if (!result || result.length === 0) {
         LoggerUtil.logWarn(

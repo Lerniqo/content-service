@@ -18,6 +18,10 @@ describe('ResourcesService', () => {
 
   const mockLogger = {
     setContext: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -49,7 +53,7 @@ describe('ResourcesService', () => {
 
   describe('createResource', () => {
     const mockCreateResourceDto: CreateResourceDto = {
-      id: 'test-resource-123',
+      resourceId: 'test-resource-123',
       name: 'Test Resource',
       type: 'video',
       description: 'A test resource',
@@ -66,25 +70,25 @@ describe('ResourcesService', () => {
       // Mock concept exists
       mockNeo4jService.read.mockResolvedValueOnce([{ conceptId: 'test-concept-123' }]);
       
-      // Mock user exists
-      mockNeo4jService.read.mockResolvedValueOnce([{ userId: mockUserId, roles: ['Teacher'] }]);
-      
       // Mock resource creation
       mockNeo4jService.write.mockResolvedValueOnce([{ resourceId: 'generated-uuid' }]);
       
       // Mock EXPLAINS relationship
-      mockNeo4jService.write.mockResolvedValueOnce([{ relationship: 'EXPLAINS' }]);
+      mockNeo4jService.write.mockResolvedValueOnce([{ resourceId: 'test-resource-123' }]);
+      
+      // Mock ensureUserNodeExists
+      mockNeo4jService.write.mockResolvedValueOnce([{ userId: mockUserId }]);
       
       // Mock PUBLISHED relationship
-      mockNeo4jService.write.mockResolvedValueOnce([{ relationship: 'PUBLISHED' }]);
+      mockNeo4jService.write.mockResolvedValueOnce([{ resourceId: 'test-resource-123' }]);
 
       const result = await service.createResource(mockCreateResourceDto, mockUserId);
 
       expect(result).toHaveProperty('resourceId');
       expect(result).toHaveProperty('uploadUrl');
       expect(result.uploadUrl).toContain('api-gateway.example.com');
-      expect(mockNeo4jService.read).toHaveBeenCalledTimes(2);
-      expect(mockNeo4jService.write).toHaveBeenCalledTimes(3);
+      expect(mockNeo4jService.read).toHaveBeenCalledTimes(1);
+      expect(mockNeo4jService.write).toHaveBeenCalledTimes(4);
     });
 
     it('should throw NotFoundException when concept does not exist', async () => {
@@ -98,35 +102,30 @@ describe('ResourcesService', () => {
       expect(mockNeo4jService.read).toHaveBeenCalledTimes(1);
     });
 
-    it('should throw NotFoundException when user does not exist or lacks proper role', async () => {
+    it('should handle database errors gracefully during concept verification', async () => {
       // Mock concept exists
-      mockNeo4jService.read.mockResolvedValueOnce([{ conceptId: 'test-concept-123' }]);
-      
-      // Mock user does not exist
-      mockNeo4jService.read.mockResolvedValueOnce([]);
-
-      await expect(
-        service.createResource(mockCreateResourceDto, mockUserId)
-      ).rejects.toThrow(NotFoundException);
-
-      expect(mockNeo4jService.read).toHaveBeenCalledTimes(2);
-    });
-
-    it('should handle database errors gracefully', async () => {
-      // Mock concept exists
-      mockNeo4jService.read.mockResolvedValueOnce([{ conceptId: 'test-concept-123' }]);
-      
-      // Mock user exists
-      mockNeo4jService.read.mockResolvedValueOnce([{ userId: mockUserId, roles: ['Teacher'] }]);
-      
-      // Mock database error during resource creation
-      mockNeo4jService.write.mockRejectedValueOnce(new Error('Database connection failed'));
+      mockNeo4jService.read.mockRejectedValueOnce(new Error('Database connection failed'));
 
       await expect(
         service.createResource(mockCreateResourceDto, mockUserId)
       ).rejects.toThrow(InternalServerErrorException);
 
-      expect(mockNeo4jService.write).toHaveBeenCalledTimes(1);
+      expect(mockNeo4jService.read).toHaveBeenCalledTimes(1);
+    });    it('should handle database errors gracefully during resource creation', async () => {
+      // Clear previous mocks
+      jest.clearAllMocks();
+      
+      // Mock concept exists
+      mockNeo4jService.read.mockResolvedValueOnce([{ conceptId: 'test-concept-123' }]);
+
+      // Mock database error during first write (createResourceNode)
+      mockNeo4jService.write.mockRejectedValue(new Error('Database error'));
+
+      await expect(
+        service.createResource(mockCreateResourceDto, mockUserId)
+      ).rejects.toThrow(InternalServerErrorException);
+
+      expect(mockNeo4jService.write).toHaveBeenCalledTimes(2);
     });
   });
 });

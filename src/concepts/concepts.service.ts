@@ -104,7 +104,9 @@ export class ConceptsService {
     `;
 
     try {
-      const result = (await this.neo4jService.read(cypher, { conceptId })) as ConceptQueryResult[];
+      const result = (await this.neo4jService.read(cypher, {
+        conceptId,
+      })) as ConceptQueryResult[];
 
       if (!result || result.length === 0) {
         LoggerUtil.logWarn(
