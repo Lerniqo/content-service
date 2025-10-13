@@ -9,7 +9,15 @@ export interface ContentEvent {
   contentId: string;
   userId: string;
   timestamp: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
+}
+
+interface BaseEvent {
+  eventType: string;
+  timestamp: Date;
+  studentId?: string;
+  userId?: string;
+  contentId?: string;
 }
 
 @Injectable()
@@ -114,11 +122,13 @@ export class ContentEventProducer {
     await this.publishEvent('student.knowledge.updated', event);
   }
 
-  private async publishEvent(topic: string, event: any): Promise<void> {
+  private async publishEvent(topic: string, event: BaseEvent): Promise<void> {
     try {
+      const key = event.studentId || event.userId || event.contentId || '';
+
       await this.kafkaService.sendMessage({
         topic,
-        key: event.studentId || event.userId || event.contentId,
+        key,
         value: JSON.stringify(event),
         headers: {
           'content-type': 'application/json',
@@ -134,7 +144,7 @@ export class ContentEventProducer {
         {
           topic,
           eventType: event.eventType,
-          key: event.studentId || event.userId || event.contentId,
+          key,
         },
       );
     } catch (error) {
@@ -145,7 +155,7 @@ export class ContentEventProducer {
         error,
         {
           topic,
-          event,
+          event: JSON.stringify(event),
         },
       );
       throw error;

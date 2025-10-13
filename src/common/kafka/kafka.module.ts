@@ -4,6 +4,7 @@ import { KafkaService } from './kafka.service';
 import { KafkaConfig } from './interfaces/kafka-config.interface';
 import { ContentEventProducer } from './producers/content-event.producer';
 import { StudentProgressEventConsumer } from './consumers/student-progress-event.consumer';
+import { UpdateMasteryConsumer } from './consumers/update-mastery.consumer';
 
 @Global()
 @Module({})
@@ -57,6 +58,7 @@ export class KafkaModule {
         KafkaService,
         ContentEventProducer,
         StudentProgressEventConsumer,
+        UpdateMasteryConsumer,
       ],
       exports: [KafkaService, ContentEventProducer],
       global: true,

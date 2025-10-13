@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/unbound-method */
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { QuizzesService } from './quizzes.service';
 import { Neo4jService } from '../common/neo4j/neo4j.service';
@@ -17,6 +19,10 @@ describe('QuizzesService - getQuizById', () => {
 
   const mockLogger = {
     setContext: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -120,7 +126,14 @@ describe('QuizzesService - getQuizById', () => {
           timeLimit: 1800,
           createdAt: '2024-10-04T10:30:00Z',
           updatedAt: '2024-10-04T10:30:00Z',
-          questions: [{ id: null, questionText: null, options: null, correctAnswer: null }],
+          questions: [
+            {
+              id: null,
+              questionText: null,
+              options: null,
+              correctAnswer: null,
+            },
+          ],
         },
       ];
 

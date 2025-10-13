@@ -4,7 +4,6 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
-  Inject,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { PinoLogger } from 'nestjs-pino';
@@ -16,7 +15,7 @@ interface ErrorResponse {
   method: string;
   message: string | object;
   error?: string;
-  details?: any;
+  details?: unknown;
   requestId?: string;
 }
 
@@ -55,7 +54,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     status: number;
     message: string | object;
     error?: string;
-    details?: any;
+    details?: unknown;
   } {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
@@ -70,10 +69,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
 
       if (typeof response === 'object' && response !== null) {
+        const responseObj = response as Record<string, unknown>;
         return {
           status,
-          message: (response as any).message || exception.message,
-          error: (response as any).error || exception.name,
+          message: (responseObj.message as string) || exception.message,
+          error: (responseObj.error as string) || exception.name,
           details: response,
         };
       }
@@ -118,7 +118,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     };
   }
 
-  private getStatusFromError(error: Error): number {
+  private getStatusFromError(error: Error): HttpStatus {
     // Map common error types to HTTP status codes
     const errorName = error.name.toLowerCase();
 
@@ -190,7 +190,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
       this.logger.error(
         errorDetails,
-        `🚨 SERVER ERROR | ${summary} | ${message}`,
+        `🚨 SERVER ERROR | ${summary} | ${typeof message === 'string' ? message : JSON.stringify(message)}`,
       );
     } else if (statusCode >= 400) {
       // Client errors - include relevant request details
@@ -207,7 +207,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
       this.logger.warn(
         clientDetails,
-        `⚠️ CLIENT ERROR | ${summary} | ${message}`,
+        `⚠️ CLIENT ERROR | ${summary} | ${typeof message === 'string' ? message : JSON.stringify(message)}`,
       );
     } else {
       // Other exceptions - minimal logging
@@ -218,12 +218,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
           url: request.url,
           requestId: reqId,
         },
-        `ℹ️ HTTP EXCEPTION | ${summary} | ${message}`,
+        `ℹ️ HTTP EXCEPTION | ${summary} | ${typeof message === 'string' ? message : JSON.stringify(message)}`,
       );
     }
   }
 
-  private sanitizeRequestBody(body: any): any {
+  private sanitizeRequestBody(body: unknown): unknown {
     if (!body || typeof body !== 'object') {
       return body;
     }
@@ -236,10 +236,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       'key',
       'authorization',
     ];
-    const sanitized = { ...body };
+    const sanitized = { ...body } as Record<string, unknown>;
 
     for (const field of sensitiveFields) {
-      if (sanitized[field]) {
+      if (field in sanitized && sanitized[field]) {
         sanitized[field] = '[REDACTED]';
       }
     }
@@ -247,10 +247,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     return sanitized;
   }
 
-  private sanitizeHeaders(headers: any): any {
+  private sanitizeHeaders(headers: unknown): Record<string, unknown> {
     if (!headers || typeof headers !== 'object') return {};
 
-    const sanitized: any = {};
+    const sanitized: Record<string, unknown> = {};
     const keepHeaders = [
       'content-type',
       'accept',
@@ -264,14 +264,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
       'x-auth-token',
     ];
 
-    Object.entries(headers).forEach(([key, value]) => {
-      const lowerKey = key.toLowerCase();
-      if (keepHeaders.includes(lowerKey)) {
-        sanitized[key] = value;
-      } else if (sensitiveHeaders.includes(lowerKey)) {
-        sanitized[key] = '[REDACTED]';
-      }
-    });
+    Object.entries(headers as Record<string, unknown>).forEach(
+      ([key, value]) => {
+        const lowerKey = key.toLowerCase();
+        if (keepHeaders.includes(lowerKey)) {
+          sanitized[key] = value;
+        } else if (sensitiveHeaders.includes(lowerKey)) {
+          sanitized[key] = '[REDACTED]';
+        }
+      },
+    );
 
     return sanitized;
   }
