@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/unbound-method */
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConceptsService } from './concepts.service';
 import { Neo4jService } from '../common/neo4j/neo4j.service';
@@ -14,6 +16,10 @@ describe('ConceptsService', () => {
 
   const mockLogger = {
     setContext: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
   };
 
   beforeEach(async () => {

@@ -39,10 +39,10 @@ export class LoggerUtil {
     logger: PinoLogger,
     context: string,
     action: string,
-    error: any,
-    details?: any,
+    error: unknown,
+    details?: unknown,
   ): void {
-    const errorDetails = {
+    const errorDetails: Record<string, unknown> = {
       error:
         error instanceof Error
           ? {
@@ -53,8 +53,11 @@ export class LoggerUtil {
               }),
             }
           : error,
-      ...(details && { details }),
     };
+
+    if (details) {
+      errorDetails.details = details;
+    }
 
     logger.error(errorDetails, this.formatMessage(context, action));
   }
@@ -81,12 +84,12 @@ export class LoggerUtil {
   }
 
   static sanitizeObject(
-    obj: any,
+    obj: unknown,
     sensitiveFields: string[] = ['password', 'token', 'secret', 'key'],
-  ): any {
+  ): unknown {
     if (!obj || typeof obj !== 'object') return obj;
 
-    const sanitized = { ...obj };
+    const sanitized = { ...(obj as Record<string, unknown>) };
     sensitiveFields.forEach((field) => {
       if (sanitized[field]) sanitized[field] = '[REDACTED]';
     });

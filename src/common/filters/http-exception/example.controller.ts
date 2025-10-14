@@ -17,6 +17,11 @@ class CreateUserDto {
   password: string;
 }
 
+interface ComplexValidationDto {
+  email?: string;
+  age?: number;
+}
+
 @Controller('api/example')
 export class ExampleController {
   // Example: Successful response
@@ -109,7 +114,7 @@ export class ExampleController {
 
   // Example: Custom HttpException with detailed response
   @Post('complex-validation')
-  complexValidation(@Body() data: any) {
+  complexValidation(@Body() data: ComplexValidationDto) {
     const validationErrors = [
       {
         field: 'email',

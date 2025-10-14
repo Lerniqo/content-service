@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/unbound-method */
+
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Test, TestingModule } from '@nestjs/testing';
 import { QuizzesController } from './quizzes.controller';
 import { QuizzesService } from './quizzes.service';
@@ -17,6 +20,10 @@ describe('QuizzesController - getQuizById', () => {
 
   const mockLogger = {
     setContext: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
   };
 
   const mockRequest = {

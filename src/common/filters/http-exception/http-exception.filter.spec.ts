@@ -1,13 +1,32 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PinoLogger } from 'nestjs-pino';
 import { HttpExceptionFilter } from './http-exception.filter';
 
+// Use expect methods directly to avoid unbound method issues
+
+interface MockResponse {
+  status: jest.MockedFunction<(code: number) => MockResponse>;
+  json: jest.MockedFunction<(body: unknown) => MockResponse>;
+}
+
+interface MockRequest {
+  method: string;
+  url: string;
+  body?: unknown;
+  params?: Record<string, unknown>;
+  query?: Record<string, unknown>;
+  headers: Record<string, string>;
+  ip: string;
+}
+
 describe('HttpExceptionFilter', () => {
   let filter: HttpExceptionFilter;
-  let mockResponse: any;
-  let mockRequest: any;
-  let mockHost: any;
+  let mockResponse: MockResponse;
+  let mockRequest: MockRequest;
+  let mockHost: ArgumentsHost;
   let mockPinoLogger: jest.Mocked<PinoLogger>;
 
   beforeEach(async () => {
@@ -17,7 +36,7 @@ describe('HttpExceptionFilter', () => {
       error: jest.fn(),
       warn: jest.fn(),
       info: jest.fn(),
-    } as any;
+    } as Partial<PinoLogger> as jest.Mocked<PinoLogger>;
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -57,7 +76,12 @@ describe('HttpExceptionFilter', () => {
         getResponse: jest.fn().mockReturnValue(mockResponse),
         getRequest: jest.fn().mockReturnValue(mockRequest),
       }),
-    };
+      getArgs: jest.fn(),
+      getArgByIndex: jest.fn(),
+      switchToRpc: jest.fn(),
+      switchToWs: jest.fn(),
+      getType: jest.fn(),
+    } as ArgumentsHost;
   });
 
   afterEach(() => {
@@ -171,8 +195,17 @@ describe('HttpExceptionFilter', () => {
           statusCode: 500,
           method: 'GET',
           url: '/test-endpoint',
+          requestId: 'test-request-id',
+          userAgent: 'test-agent',
+          ip: '127.0.0.1',
+          error: expect.objectContaining({
+            name: 'HttpException',
+            message: 'Internal Server Error',
+          }),
         }),
-        'Server Error: Internal Server Error',
+        expect.stringContaining(
+          '🚨 SERVER ERROR | 🔥 GET /test-endpoint → 500 (test-request-id) | Internal Server Error',
+        ),
       );
     });
 
@@ -189,9 +222,15 @@ describe('HttpExceptionFilter', () => {
           statusCode: 400,
           method: 'GET',
           url: '/test-endpoint',
+          requestId: 'test-request-id',
           body: { test: 'data' },
+          params: { id: '1' },
+          query: { page: '1' },
+          userAgent: 'test-agent',
         }),
-        'Client Error: Bad Request',
+        expect.stringContaining(
+          '⚠️ CLIENT ERROR | ⚠️ GET /test-endpoint → 400 (test-request-id) | Bad Request',
+        ),
       );
     });
   });
@@ -213,13 +252,22 @@ describe('HttpExceptionFilter', () => {
 
       expect(mockPinoLogger.warn).toHaveBeenCalledWith(
         expect.objectContaining({
+          statusCode: 400,
+          method: 'GET',
+          url: '/test-endpoint',
+          requestId: 'test-request-id',
           body: {
             username: 'testuser',
             password: '[REDACTED]',
             token: '[REDACTED]',
           },
+          params: { id: '1' },
+          query: { page: '1' },
+          userAgent: 'test-agent',
         }),
-        'Client Error: Bad Request',
+        expect.stringContaining(
+          '⚠️ CLIENT ERROR | ⚠️ GET /test-endpoint → 400 (test-request-id) | Bad Request',
+        ),
       );
     });
   });

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/unbound-method */
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { QuizzesService } from './quizzes.service';
 import { Neo4jService } from '../common/neo4j/neo4j.service';
@@ -17,6 +19,10 @@ describe('QuizzesService - getQuizById', () => {
 
   const mockLogger = {
     setContext: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
   };
 
   beforeEach(async () => {

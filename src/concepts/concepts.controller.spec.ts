@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/unbound-method */
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConceptsController } from './concepts.controller';
 import { ConceptsService } from './concepts.service';
@@ -10,10 +12,13 @@ import { LearningResourceDto } from './dto/learning-resource.dto';
 describe('ConceptsController', () => {
   let controller: ConceptsController;
   let service: ConceptsService;
-  let logger: PinoLogger;
 
   const mockLogger = {
     setContext: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
   };
 
   const mockConceptsService = {
@@ -37,7 +42,6 @@ describe('ConceptsController', () => {
 
     controller = module.get<ConceptsController>(ConceptsController);
     service = module.get<ConceptsService>(ConceptsService);
-    logger = module.get<PinoLogger>(PinoLogger);
   });
 
   it('should be defined', () => {
