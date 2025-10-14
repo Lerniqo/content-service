@@ -92,9 +92,9 @@ describe('QuizzesController - getQuizById', () => {
       );
 
       // Act & Assert
-      await expect(controller.getQuizById(quizId, mockRequest as any)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.getQuizById(quizId, mockRequest as any),
+      ).rejects.toThrow(NotFoundException);
       expect(service.getQuizById).toHaveBeenCalledWith(quizId);
     });
 

@@ -82,7 +82,9 @@ describe('ConceptsService', () => {
 
       // Assert
       expect(neo4jService.read).toHaveBeenCalledWith(
-        expect.stringContaining('MATCH (c:SyllabusConcept {conceptId: $conceptId})'),
+        expect.stringContaining(
+          'MATCH (c:SyllabusConcept {conceptId: $conceptId})',
+        ),
         { conceptId },
       );
       expect(result.conceptId).toBe(conceptId);
@@ -101,7 +103,9 @@ describe('ConceptsService', () => {
         NotFoundException,
       );
       expect(neo4jService.read).toHaveBeenCalledWith(
-        expect.stringContaining('MATCH (c:SyllabusConcept {conceptId: $conceptId})'),
+        expect.stringContaining(
+          'MATCH (c:SyllabusConcept {conceptId: $conceptId})',
+        ),
         { conceptId },
       );
     });
@@ -116,7 +120,9 @@ describe('ConceptsService', () => {
           type: 'Particle',
           description: 'A basic concept',
           createdAt: '2024-10-04T10:30:00Z',
-          prerequisites: [{ conceptId: null, name: null, type: null, description: null }],
+          prerequisites: [
+            { conceptId: null, name: null, type: null, description: null },
+          ],
           resources: [{ resourceId: null, name: null, type: null }],
         },
       ];

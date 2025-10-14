@@ -120,7 +120,14 @@ describe('QuizzesService - getQuizById', () => {
           timeLimit: 1800,
           createdAt: '2024-10-04T10:30:00Z',
           updatedAt: '2024-10-04T10:30:00Z',
-          questions: [{ id: null, questionText: null, options: null, correctAnswer: null }],
+          questions: [
+            {
+              id: null,
+              questionText: null,
+              options: null,
+              correctAnswer: null,
+            },
+          ],
         },
       ];
 
