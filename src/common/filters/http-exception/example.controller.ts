@@ -22,7 +22,7 @@ interface ComplexValidationDto {
   age?: number;
 }
 
-@Controller('api/example')
+@Controller('example')
 export class ExampleController {
   // Example: Successful response
   @Get('success')

@@ -68,8 +68,8 @@ async function bootstrap() {
       port,
       url: `http://localhost:${port}`,
       endpoints: {
-        resources: `http://localhost:${port}/api/content/resources`,
-        health: `http://localhost:${port}/api/content/health`,
+        resources: `http://localhost:${port}/resources`,
+        health: `http://localhost:${port}/health`,
       },
     },
   );

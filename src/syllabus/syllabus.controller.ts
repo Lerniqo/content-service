@@ -12,7 +12,7 @@ import { PinoLogger } from 'nestjs-pino';
 import { LoggerUtil } from '../common/utils/logger.util';
 
 @ApiTags('syllabus')
-@Controller('api/content/syllabus')
+@Controller('syllabus')
 export class SyllabusController {
   constructor(
     private readonly syllabusService: SyllabusService,

@@ -32,7 +32,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 @ApiTags('resources')
-@Controller('api/content/resources')
+@Controller('resources')
 @UseGuards(RolesGuard)
 export class ResourcesController {
   constructor(

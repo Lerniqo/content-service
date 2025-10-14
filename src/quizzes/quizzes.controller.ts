@@ -31,7 +31,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 @ApiTags('quizzes')
-@Controller('api/content/quizzes')
+@Controller('quizzes')
 @UseGuards(RolesGuard)
 export class QuizzesController {
   constructor(

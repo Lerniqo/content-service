@@ -17,7 +17,7 @@ import { Roles } from '../auth/roles/roles.decorator';
 import { LoggerUtil } from '../common/utils/logger.util';
 
 @ApiTags('questions')
-@Controller('api/content/questions')
+@Controller('questions')
 @UseGuards(RolesGuard)
 export class QuestionsController {
   constructor(

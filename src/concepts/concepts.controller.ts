@@ -6,7 +6,7 @@ import { PinoLogger } from 'nestjs-pino';
 import { LoggerUtil } from '../common/utils/logger.util';
 
 @ApiTags('concepts')
-@Controller('api/content/concepts')
+@Controller('concepts')
 export class ConceptsController {
   constructor(
     private readonly conceptsService: ConceptsService,
