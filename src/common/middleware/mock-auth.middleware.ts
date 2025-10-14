@@ -20,14 +20,12 @@ export class MockAuthMiddleware implements NestMiddleware {
     // Priority 1: Check for API Gateway style headers (production pattern)
     const userId = req.headers['x-user-id'] as string;
     const userRoles = req.headers['x-user-roles'] as string;
-    const userName = req.headers['x-user-name'] as string;
     
     if (userId && userRoles) {
-      // API Gateway provided user information
+      // API Gateway provided user information (no need for x-user-name)
       req.user = {
         id: userId,
         role: userRoles.split(',').map((role) => role.trim()),
-        username: userName || 'api-gateway-user',
       };
     }
     // Priority 2: Check for direct user header (testing/development)
@@ -44,7 +42,6 @@ export class MockAuthMiddleware implements NestMiddleware {
         req.user = {
           id: 'mock-admin-123',
           role: ['admin'],
-          username: 'mock-admin',
         };
       }
     }
@@ -54,7 +51,6 @@ export class MockAuthMiddleware implements NestMiddleware {
       req.user = {
         id: 'mock-admin-123',
         role: ['admin'],
-        username: 'mock-admin',
       };
     } else {
       // Production mode without proper headers - this should not happen

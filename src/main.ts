@@ -18,11 +18,19 @@ async function bootstrap() {
   // Enable CORS
   app.enableCors({
     origin: [
-      'http://localhost:3000', // Local development
-      'https://main.ddwyki3l42m0e.amplifyapp.com', // Add your production frontend domain
+      'http://localhost:3000', // Frontend development
+      'http://localhost:4001', // Content service
+      'https://main.ddwyki3l42m0e.amplifyapp.com', // Production frontend domain
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'x-user-id',
+      'x-user-roles',
+      'x-user-name',
+    ],
     credentials: true, // Enable if you need to send cookies/auth headers
   });
 
@@ -42,7 +50,7 @@ async function bootstrap() {
     }),
   );
 
-  const port = process.env.PORT ?? 3000;
+  const port = process.env.PORT ?? 4001;
 
   // Log application startup
   LoggerUtil.logInfo(pinoLogger, 'Application', 'Starting Content Service', {
@@ -59,6 +67,10 @@ async function bootstrap() {
     {
       port,
       url: `http://localhost:${port}`,
+      endpoints: {
+        resources: `http://localhost:${port}/api/content/resources`,
+        health: `http://localhost:${port}/api/content/health`,
+      },
     },
   );
 }
