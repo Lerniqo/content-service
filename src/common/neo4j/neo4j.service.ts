@@ -14,9 +14,9 @@ export class Neo4jService {
     private readonly configService: ConfigService,
   ) {
     this.logger.setContext(Neo4jService.name);
-    const uri = this.configService.get<string>('NEO4J_URI');
-    const username = this.configService.get<string>('NEO4J_USERNAME');
-    const password = this.configService.get<string>('NEO4J_PASSWORD');
+    const uri = this.configService.get<string>('NEO4J_URI') || 'bolt://localhost:7687';
+    const username = this.configService.get<string>('NEO4J_USERNAME') || 'neo4j';
+    const password = this.configService.get<string>('NEO4J_PASSWORD') || 'password';
 
     if (!uri || !username || !password) {
       throw new Error(

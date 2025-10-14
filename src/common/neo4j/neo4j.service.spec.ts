@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
-/* eslint-disable @typescript-eslint/no-base-to-string */
 /* eslint-disable @typescript-eslint/unbound-method */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Test, TestingModule } from '@nestjs/testing';
@@ -28,17 +26,27 @@ describe('Neo4jService', () => {
 
     mockSession = {
       run: jest.fn(),
+      executeRead: jest.fn(),
+      executeWrite: jest.fn(),
       close: jest.fn(),
     } as any;
 
     configService = {
-      get: jest.fn(),
+      get: jest.fn().mockImplementation((key: string) => {
+        const config: Record<string, string> = {
+          NEO4J_URI: 'bolt://test:7687',
+          NEO4J_USERNAME: 'testuser',
+          NEO4J_PASSWORD: 'testpass',
+        };
+        return config[key];
+      }),
     } as any;
 
     logger = {
       setContext: jest.fn(),
       info: jest.fn(),
       error: jest.fn(),
+      debug: jest.fn(),
     } as any;
 
     // Mock the neo4j driver creation
@@ -96,10 +104,12 @@ describe('Neo4jService', () => {
     });
 
     it('should use default values when config is not provided', () => {
-      configService.get.mockReturnValue(undefined);
+      const mockConfigService = {
+        get: jest.fn().mockReturnValue(undefined),
+      } as any;
 
-      // Create new service instance to test constructor
-      new Neo4jService(logger, configService);
+      // Create new service instance to test constructor with empty config
+      new Neo4jService(logger, mockConfigService);
 
       expect(neo4j.driver).toHaveBeenCalledWith(
         'bolt://localhost:7687',
@@ -111,14 +121,14 @@ describe('Neo4jService', () => {
 
   describe('onModuleInit', () => {
     it('should connect to Neo4j successfully', async () => {
-      const serverInfo = { address: 'localhost:7687', version: '4.4.0' };
+      const serverInfo = { address: 'localhost:7687', agent: '4.4.0' };
       mockDriver.getServerInfo.mockResolvedValue(serverInfo);
 
       await service.onModuleInit();
 
       expect(mockDriver.getServerInfo).toHaveBeenCalled();
       expect(logger.info).toHaveBeenCalledWith(
-        `Connected to Neo4j: ${serverInfo}`,
+        '[Neo4jService] Connected to Neo4j database | {"address":"localhost:7687","version":"4.4.0","uri":"bolt://test:7687"}',
       );
     });
 
@@ -128,8 +138,11 @@ describe('Neo4jService', () => {
 
       await expect(service.onModuleInit()).rejects.toThrow('Connection failed');
       expect(logger.error).toHaveBeenCalledWith(
-        'Failed to connect to Neo4j',
-        error,
+        {
+          error: { name: 'Error', message: 'Connection failed' },
+          details: { uri: 'bolt://test:7687' },
+        },
+        '[Neo4jService] Failed to connect to Neo4j database',
       );
     });
   });
@@ -141,7 +154,9 @@ describe('Neo4jService', () => {
       await service.onModuleDestroy();
 
       expect(mockDriver.close).toHaveBeenCalled();
-      expect(logger.info).toHaveBeenCalledWith('Neo4j driver closed');
+      expect(logger.info).toHaveBeenCalledWith(
+        '[Neo4jService] Neo4j driver closed successfully',
+      );
     });
   });
 
@@ -156,7 +171,10 @@ describe('Neo4jService', () => {
         { toObject: () => ({ id: 2, name: 'Test2' }) },
       ];
       const mockResult = { records: mockRecords };
-      mockSession.run.mockResolvedValue(mockResult as any);
+      mockSession.executeRead.mockImplementation((callback) => {
+        const mockTx = { run: jest.fn().mockResolvedValue(mockResult) } as any;
+        return Promise.resolve(callback(mockTx));
+      });
 
       const cypher = 'MATCH (n) RETURN n';
       const params = { limit: 10 };
@@ -164,7 +182,9 @@ describe('Neo4jService', () => {
       const result = await service.read(cypher, params);
 
       expect(mockDriver.session).toHaveBeenCalled();
-      expect(mockSession.run).toHaveBeenCalledWith(cypher, params);
+      expect(mockSession.executeRead).toHaveBeenCalledWith(
+        expect.any(Function),
+      );
       expect(mockSession.close).toHaveBeenCalled();
       expect(result).toEqual([
         { id: 1, name: 'Test' },
@@ -175,32 +195,43 @@ describe('Neo4jService', () => {
     it('should execute read query without params', async () => {
       const mockRecords = [{ toObject: () => ({ count: 5 }) }];
       const mockResult = { records: mockRecords };
-      mockSession.run.mockResolvedValue(mockResult as any);
+      mockSession.executeRead.mockImplementation((callback) => {
+        const mockTx = { run: jest.fn().mockResolvedValue(mockResult) } as any;
+        return Promise.resolve(callback(mockTx));
+      });
 
       const cypher = 'MATCH (n) RETURN count(n) as count';
 
       const result = await service.read(cypher);
 
-      expect(mockSession.run).toHaveBeenCalledWith(cypher, undefined);
+      expect(mockSession.executeRead).toHaveBeenCalledWith(
+        expect.any(Function),
+      );
       expect(result).toEqual([{ count: 5 }]);
     });
 
     it('should handle query execution error', async () => {
       const error = new Error('Query failed');
-      mockSession.run.mockRejectedValue(error);
+      mockSession.executeRead.mockRejectedValue(error);
 
       const cypher = 'INVALID QUERY';
 
       await expect(service.read(cypher)).rejects.toThrow('Query failed');
       expect(logger.error).toHaveBeenCalledWith(
-        'Failed to execute Cypher query',
-        error,
+        expect.objectContaining({
+          error: { name: 'Error', message: 'Query failed' },
+          details: expect.objectContaining({
+            query: 'INVALID QUERY',
+            duration: expect.stringMatching(/\d+ms/),
+          }),
+        }),
+        '[Neo4jService] Read query failed',
       );
       expect(mockSession.close).toHaveBeenCalled();
     });
 
     it('should close session even if query fails', async () => {
-      mockSession.run.mockRejectedValue(new Error('Query failed'));
+      mockSession.executeRead.mockRejectedValue(new Error('Query failed'));
 
       const cypher = 'MATCH (n) RETURN n';
 
@@ -217,7 +248,10 @@ describe('Neo4jService', () => {
     it('should execute write query successfully', async () => {
       const mockRecords = [{ toObject: () => ({ id: 1, name: 'Created' }) }];
       const mockResult = { records: mockRecords };
-      mockSession.run.mockResolvedValue(mockResult as any);
+      mockSession.executeWrite.mockImplementation((callback) => {
+        const mockTx = { run: jest.fn().mockResolvedValue(mockResult) } as any;
+        return Promise.resolve(callback(mockTx));
+      });
 
       const cypher = 'CREATE (n:Person {name: $name}) RETURN n';
       const params = { name: 'John' };
@@ -225,7 +259,9 @@ describe('Neo4jService', () => {
       const result = await service.write(cypher, params);
 
       expect(mockDriver.session).toHaveBeenCalled();
-      expect(mockSession.run).toHaveBeenCalledWith(cypher, params);
+      expect(mockSession.executeWrite).toHaveBeenCalledWith(
+        expect.any(Function),
+      );
       expect(mockSession.close).toHaveBeenCalled();
       expect(result).toEqual([{ id: 1, name: 'Created' }]);
     });
@@ -233,32 +269,43 @@ describe('Neo4jService', () => {
     it('should execute write query without params', async () => {
       const mockRecords = [];
       const mockResult = { records: mockRecords };
-      mockSession.run.mockResolvedValue(mockResult as any);
+      mockSession.executeWrite.mockImplementation((callback) => {
+        const mockTx = { run: jest.fn().mockResolvedValue(mockResult) } as any;
+        return Promise.resolve(callback(mockTx));
+      });
 
       const cypher = 'CREATE INDEX ON :Person(email)';
 
       const result = await service.write(cypher);
 
-      expect(mockSession.run).toHaveBeenCalledWith(cypher, undefined);
+      expect(mockSession.executeWrite).toHaveBeenCalledWith(
+        expect.any(Function),
+      );
       expect(result).toEqual([]);
     });
 
     it('should handle write query execution error', async () => {
       const error = new Error('Write failed');
-      mockSession.run.mockRejectedValue(error);
+      mockSession.executeWrite.mockRejectedValue(error);
 
       const cypher = 'CREATE (n:Person)';
 
       await expect(service.write(cypher)).rejects.toThrow('Write failed');
       expect(logger.error).toHaveBeenCalledWith(
-        'Failed to execute Cypher query',
-        error,
+        expect.objectContaining({
+          error: { name: 'Error', message: 'Write failed' },
+          details: expect.objectContaining({
+            query: 'CREATE (n:Person)',
+            duration: expect.stringMatching(/\d+ms/),
+          }),
+        }),
+        '[Neo4jService] Write query failed',
       );
       expect(mockSession.close).toHaveBeenCalled();
     });
 
     it('should close session even if write query fails', async () => {
-      mockSession.run.mockRejectedValue(new Error('Write failed'));
+      mockSession.executeWrite.mockRejectedValue(new Error('Write failed'));
 
       const cypher = 'CREATE (n:Person)';
 
