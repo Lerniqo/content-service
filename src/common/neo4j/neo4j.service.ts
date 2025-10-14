@@ -18,7 +18,11 @@ export class Neo4jService {
     const username = this.configService.get<string>('NEO4J_USERNAME') || 'neo4j';
     const password = this.configService.get<string>('NEO4J_PASSWORD') || 'password';
 
-    if (!uri || !username || !password) {
+    // Only throw error in production when no config is provided and defaults would be used
+    if (process.env['NODE_ENV'] === 'production' && 
+        (!this.configService.get<string>('NEO4J_URI') || 
+         !this.configService.get<string>('NEO4J_USERNAME') || 
+         !this.configService.get<string>('NEO4J_PASSWORD'))) {
       throw new Error(
         'Neo4j credentials not found in environment variables. Please set NEO4J_URI, NEO4J_USERNAME, and NEO4J_PASSWORD in your .env file.'
       );

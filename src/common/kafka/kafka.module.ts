@@ -5,6 +5,7 @@ import { KafkaConfig } from './interfaces/kafka-config.interface';
 import { ContentEventProducer } from './producers/content-event.producer';
 import { StudentProgressEventConsumer } from './consumers/student-progress-event.consumer';
 import { UpdateMasteryConsumer } from './consumers/update-mastery.consumer';
+import { Neo4jModule } from '../neo4j/neo4j.module';
 
 @Global()
 @Module({})
@@ -12,7 +13,7 @@ export class KafkaModule {
   static forRootAsync(): DynamicModule {
     return {
       module: KafkaModule,
-      imports: [],
+      imports: [Neo4jModule],
       providers: [
         {
           provide: 'KAFKA_CONFIG',
@@ -27,20 +28,23 @@ export class KafkaModule {
                 'content-service',
               ),
               brokers,
-              connectionTimeout: configService.get<number>(
-                'KAFKA_CONNECTION_TIMEOUT',
-                3000,
+              connectionTimeout: parseInt(
+                configService.get<string>('KAFKA_CONNECTION_TIMEOUT', '3000'),
+                10,
               ),
-              requestTimeout: configService.get<number>(
-                'KAFKA_REQUEST_TIMEOUT',
-                30000,
+              requestTimeout: parseInt(
+                configService.get<string>('KAFKA_REQUEST_TIMEOUT', '30000'),
+                10,
               ),
               retry: {
-                initialRetryTime: configService.get<number>(
-                  'KAFKA_INITIAL_RETRY_TIME',
-                  100,
+                initialRetryTime: parseInt(
+                  configService.get<string>('KAFKA_INITIAL_RETRY_TIME', '100'),
+                  10,
                 ),
-                retries: configService.get<number>('KAFKA_RETRIES', 8),
+                retries: parseInt(
+                  configService.get<string>('KAFKA_RETRIES', '8'),
+                  10,
+                ),
               },
               ssl: configService.get<boolean>('KAFKA_SSL', false),
               // Optional SASL configuration for production
