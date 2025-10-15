@@ -406,4 +406,107 @@ export class QuizzesController {
       throw error;
     }
   }
+
+
+  @Get('concept/:conceptId')
+  @HttpCode(HttpStatus.OK)
+  @Roles('student', 'teacher', 'admin') // All authenticated users can access quizzes
+  @ApiOperation({
+    summary: 'Get quizzes by Concept ID',
+    description:
+      'Retrieves all quizzes associated with a specific concept. This endpoint is protected and requires authentication. All authenticated users (students, teachers, admins) can access quizzes.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Quizzes retrieved successfully',
+    type: [QuizResponseDto],
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Unauthorized' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Valid user role required',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 403 },
+        message: { type: 'string', example: 'Forbidden resource' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Concept with specified ID not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: {
+          type: 'string',
+          example: 'Concept with ID concept-math-001 not found',
+        },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - Database or server error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Internal server error' },
+        error: { type: 'string', example: 'Internal Server Error' }, 
+      },
+    },
+  })
+  async getQuizzesByConceptId(
+    @Param('conceptId') conceptId: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<QuizResponseDto[]> {
+    const userId = req.user.id;
+
+    LoggerUtil.logInfo(
+      this.logger,
+      'QuizzesController',
+      'Protected quizzes by concept request received',
+      { conceptId, userId },
+    );
+
+    try {
+      const result = await this.quizzesService.getQuizzesByConceptId(conceptId);
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'QuizzesController',
+        'Quizzes retrieved successfully',
+        {
+          conceptId,
+          userId,
+          quizzesCount: result.length,
+        },
+      );
+
+      return result;
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuizzesController',
+        'Failed to retrieve quizzes by concept',
+        error,
+        { conceptId, userId },  
+      );
+      throw error;
+    }
+  }
 }

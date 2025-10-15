@@ -37,11 +37,114 @@ interface QuizQueryResult {
 
 @Injectable()
 export class QuizzesService {
+
   constructor(
     private readonly neo4jService: Neo4jService,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(QuizzesService.name);
+  }
+
+
+  async getQuizzesByConceptId(conceptId: string): Promise<QuizResponseDto[]> {
+    LoggerUtil.logInfo(
+      this.logger,
+      'QuizzesService',
+      'Fetching quizzes by concept ID',
+      { conceptId },
+    );
+
+    const cypher = `
+      MATCH (quiz:Quiz)-[:TESTS]->(concept:SyllabusConcept {conceptId: $conceptId})
+      
+      // Get all questions included in each quiz
+      OPTIONAL MATCH (quiz)-[:INCLUDES]->(question:Question)
+      
+      RETURN 
+        quiz.id as id,
+        quiz.title as title,
+        quiz.description as description,
+        quiz.timeLimit as timeLimit,
+        quiz.createdAt as createdAt,
+        quiz.updatedAt as updatedAt,
+        
+        // Collect questions for each quiz
+        COLLECT(DISTINCT {
+          id: question.id,
+          questionText: question.questionText,
+          options: question.options,
+          correctAnswer: question.correctAnswer,
+          explanation: question.explanation,
+          tags: question.tags,
+          createdAt: question.createdAt,
+          updatedAt: question.updatedAt
+        }) as questions
+    `;
+
+    try {
+      const rawResult = await this.neo4jService.read(cypher, { conceptId }) as unknown;
+      const result = rawResult as QuizQueryResult[];
+
+      if (!result || result.length === 0) {
+        LoggerUtil.logInfo(
+          this.logger,
+          'QuizzesService',
+          'No quizzes found for concept',
+          { conceptId },
+        );
+        return [];
+      }
+
+      const quizzes = result.map((quizData) => {
+        // Filter out null questions (when no questions exist)
+        const questions = quizData.questions
+          .filter((question: QuestionData) => question.id !== null)
+          .map(
+            (question: QuestionData) =>
+              new QuizQuestionDto(
+                question.id!,
+                question.questionText!,
+                question.options!,
+                question.correctAnswer!,
+                question.explanation ?? undefined,
+                question.tags ?? undefined,
+                question.createdAt ?? undefined,
+                question.updatedAt ?? undefined,
+              ),
+          );
+
+        return new QuizResponseDto(
+          quizData.id,
+          quizData.title,
+          quizData.timeLimit,
+          questions,
+          quizData.description ?? undefined,
+          quizData.createdAt ?? undefined,
+          quizData.updatedAt ?? undefined,
+        );
+      });
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'QuizzesService',
+        'Quizzes retrieved successfully for concept',
+        {
+          conceptId,
+          quizzesCount: quizzes.length,
+        },
+      );
+
+      return quizzes;
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuizzesService',
+        'Failed to retrieve quizzes by concept',
+        error,
+        { conceptId },
+      );
+      throw error;
+    }
   }
 
   async createQuiz(createQuizDto: CreateQuizDto, userId: string): Promise<CreateQuizResponseDto> {
