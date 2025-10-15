@@ -9,8 +9,9 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Headers,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiHeader } from '@nestjs/swagger';
 import { LearningPathService } from './learning-path.service';
 import { RequestLearningPathDto } from './dto/request-learning-path.dto';
 import { LearningPathResponseDto } from './dto/learning-path-response.dto';
@@ -49,6 +50,11 @@ export class LearningPathController {
     description:
       'Submit a learning goal to generate a personalized learning path. The AI service will process this asynchronously.',
   })
+  @ApiHeader({
+    name: 'x-user-id',
+    description: 'User ID',
+    required: true,
+  })
   @ApiResponse({
     status: HttpStatus.ACCEPTED,
     description: 'Learning path generation request accepted',
@@ -63,10 +69,9 @@ export class LearningPathController {
     description: 'Failed to initiate learning path generation',
   })
   async requestLearningPath(
-    @Req() req: AuthenticatedRequest,
+    @Headers('x-user-id') userId: string,
     @Body() dto: RequestLearningPathDto,
   ): Promise<LearningPathResponseDto> {
-    const userId = req.user.id;
 
     LoggerUtil.logInfo(
       this.logger,
@@ -97,6 +102,11 @@ export class LearningPathController {
     summary: 'Get all learning paths for the authenticated user',
     description: 'Retrieve all learning paths created for the current user',
   })
+  @ApiHeader({
+    name: 'x-user-id',
+    description: 'User ID',
+    required: true,
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Learning paths retrieved successfully',
@@ -107,9 +117,8 @@ export class LearningPathController {
     description: 'Failed to fetch learning paths',
   })
   async getUserLearningPaths(
-    @Req() req: AuthenticatedRequest,
+    @Headers('x-user-id') userId: string,
   ): Promise<GetLearningPathResponseDto[]> {
-    const userId = req.user.id;
 
     LoggerUtil.logInfo(
       this.logger,
@@ -142,6 +151,11 @@ export class LearningPathController {
     description: 'Learning path ID',
     example: 'lp_abc123def',
   })
+  @ApiHeader({
+    name: 'x-user-id',
+    description: 'User ID',
+    required: true,
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Learning path retrieved successfully',
@@ -156,10 +170,9 @@ export class LearningPathController {
     description: 'Failed to fetch learning path',
   })
   async getLearningPathById(
-    @Req() req: AuthenticatedRequest,
+    @Headers('x-user-id') userId: string,
     @Param('id') learningPathId: string,
   ): Promise<GetLearningPathResponseDto> {
-    const userId = req.user.id;
 
     LoggerUtil.logInfo(
       this.logger,
