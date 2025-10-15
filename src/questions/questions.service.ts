@@ -40,7 +40,7 @@ export class QuestionsService {
     this.logger.setContext(QuestionsService.name);
   }
 
-  async createQuestion(createQuestionDto: CreateQuestionDto): Promise<CreateQuestionResponseDto> {
+  async createQuestion(createQuestionDto: CreateQuestionDto, userId: string): Promise<CreateQuestionResponseDto> {
     const questionId = createQuestionDto.id || uuidv4();
     
     LoggerUtil.logInfo(
@@ -52,6 +52,7 @@ export class QuestionsService {
         providedId: !!createQuestionDto.id,
         questionText: createQuestionDto.questionText.substring(0, 50) + '...',
         optionsCount: createQuestionDto.options.length,
+        userId,
       },
     );
 
@@ -65,11 +66,14 @@ export class QuestionsService {
       // Create the Question node
       await this.createQuestionNode(questionId, createQuestionDto);
 
+      // Create the CREATED_BY relationship between User and Question
+      await this.createCreatedByRelationship(userId, questionId);
+
       LoggerUtil.logInfo(
         this.logger,
         'QuestionsService',
         'Question created successfully',
-        { questionId },
+        { questionId, userId },
       );
 
       return new CreateQuestionResponseDto(questionId);
@@ -79,7 +83,7 @@ export class QuestionsService {
         'QuestionsService',
         'Failed to create question',
         error,
-        { questionId },
+        { questionId, userId },
       );
       
       // Cleanup: attempt to remove any partially created data
@@ -466,6 +470,139 @@ export class QuestionsService {
       );
       
       throw new InternalServerErrorException('Failed to delete question');
+    }
+  }
+
+  private async createCreatedByRelationship(userId: string, questionId: string): Promise<void> {
+    // First ensure the user node exists
+    await this.ensureUserNodeExists(userId);
+
+    const query = `
+      MATCH (u:User {userId: $userId})
+      MATCH (q:Question {id: $questionId})
+      CREATE (u)-[:CREATED_BY]->(q)
+      RETURN q.id as questionId
+    `;
+
+    try {
+      const result = (await this.neo4jService.write(query, {
+        userId,
+        questionId,
+      })) as any[];
+
+      if (result.length === 0) {
+        throw new InternalServerErrorException(
+          'Failed to create CREATED_BY relationship',
+        );
+      }
+
+      LoggerUtil.logDebug(
+        this.logger,
+        'QuestionsService',
+        'CREATED_BY relationship created successfully',
+        { userId, questionId },
+      );
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuestionsService',
+        'Error creating CREATED_BY relationship',
+        error,
+        { userId, questionId },
+      );
+
+      throw new InternalServerErrorException(
+        'Failed to create CREATED_BY relationship',
+      );
+    }
+  }
+
+  private async ensureUserNodeExists(userId: string): Promise<void> {
+    const query = `
+      MERGE (u:User {userId: $userId})
+      RETURN u.userId as userId
+    `;
+
+    try {
+      await this.neo4jService.write(query, { userId });
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuestionsService',
+        'Error ensuring user node exists',
+        error,
+        { userId },
+      );
+      // Don't throw here as this is not critical for the creation operation
+    }
+  }
+
+  async getQuestionsByTeacherId(teacherId: string): Promise<QuestionResponseDto[]> {
+    LoggerUtil.logInfo(
+      this.logger,
+      'QuestionsService',
+      'Fetching questions by teacher ID',
+      { teacherId },
+    );
+
+    const query = `
+      MATCH (u:User {userId: $teacherId})-[:CREATED_BY]->(q:Question)
+      RETURN q
+      ORDER BY q.createdAt DESC
+    `;
+
+    try {
+      const result = (await this.neo4jService.read(query, { teacherId })) as QuestionQueryResult[];
+      
+      if (!result || result.length === 0) {
+        LoggerUtil.logInfo(
+          this.logger,
+          'QuestionsService',
+          'No questions found for teacher',
+          { teacherId },
+        );
+        
+        throw new NotFoundException(
+          `No questions found for teacher with ID ${teacherId}`,
+        );
+      }
+
+      const questions = result.map(record => {
+        const questionNode = record.q.properties;
+        return new QuestionResponseDto({
+          id: questionNode.id,
+          questionText: questionNode.questionText,
+          options: questionNode.options,
+          correctAnswer: questionNode.correctAnswer,
+          explanation: questionNode.explanation,
+          tags: questionNode.tags || [],
+          createdAt: questionNode.createdAt,
+          updatedAt: questionNode.updatedAt,
+        });
+      });
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'QuestionsService',
+        'Questions by teacher fetched successfully',
+        { teacherId, count: questions.length },
+      );
+
+      return questions;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      
+      LoggerUtil.logError(
+        this.logger,
+        'QuestionsService',
+        'Error fetching questions by teacher',
+        error,
+        { teacherId },
+      );
+      
+      throw new InternalServerErrorException('Failed to fetch questions by teacher');
     }
   }
 }

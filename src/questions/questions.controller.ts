@@ -7,6 +7,7 @@ import {
   Put,
   Delete,
   Param,
+  Req,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -21,6 +22,16 @@ import { PinoLogger } from 'nestjs-pino';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
 import { LoggerUtil } from '../common/utils/logger.util';
+import { Request } from 'express';
+
+// Extend the Request interface to include user
+interface AuthenticatedRequest extends Request {
+  user: {
+    id: string;
+    role: string[];
+    [key: string]: any;
+  };
+}
 
 @ApiTags('questions')
 @Controller('questions')
@@ -139,7 +150,10 @@ export class QuestionsController {
   })
   async create(
     @Body() createQuestionDto: CreateQuestionDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<CreateQuestionResponseDto> {
+    const userId = req.user.id;
+
     LoggerUtil.logInfo(
       this.logger,
       'QuestionsController',
@@ -150,11 +164,12 @@ export class QuestionsController {
         optionsCount: createQuestionDto.options.length,
         hasTags: !!createQuestionDto.tags?.length,
         hasExplanation: !!createQuestionDto.explanation,
+        userId,
       },
     );
 
     try {
-      const result = await this.questionsService.createQuestion(createQuestionDto);
+      const result = await this.questionsService.createQuestion(createQuestionDto, userId);
 
       LoggerUtil.logInfo(
         this.logger,
@@ -162,6 +177,7 @@ export class QuestionsController {
         'Question created successfully',
         {
           questionId: result.id,
+          userId,
         },
       );
 
@@ -174,6 +190,7 @@ export class QuestionsController {
         error,
         {
           questionId: createQuestionDto.id,
+          userId,
         },
       );
       throw error;
@@ -540,6 +557,138 @@ export class QuestionsController {
         'Failed to delete question',
         error,
         { questionId: id },
+      );
+      throw error;
+    }
+  }
+
+  @Get('teacher')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get questions by teacher ID',
+    description:
+      'Retrieves all questions created by the authenticated teacher. Teacher ID is extracted from the x-user-id header. Authentication is handled by the API Gateway.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Questions retrieved successfully',
+    type: [QuestionResponseDto],
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            example: 'question-001',
+            description: 'Unique identifier for the question',
+          },
+          questionText: {
+            type: 'string',
+            example: 'What is 2 + 2?',
+            description: 'The question text',
+          },
+          options: {
+            type: 'array',
+            items: { type: 'string' },
+            example: ['2', '3', '4', '5'],
+            description: 'Answer options',
+          },
+          correctAnswer: {
+            type: 'string',
+            example: '4',
+            description: 'The correct answer',
+          },
+          explanation: {
+            type: 'string',
+            example: 'Adding 2 + 2 equals 4',
+            description: 'Explanation for the correct answer',
+          },
+          tags: {
+            type: 'array',
+            items: { type: 'string' },
+            example: ['mathematics', 'addition'],
+            description: 'Tags associated with the question',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'date-time',
+            example: '2024-10-04T10:30:00Z',
+            description: 'Creation date of the question',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'date-time',
+            example: '2024-10-04T10:30:00Z',
+            description: 'Last update date of the question',
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Teacher not found or has no questions',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: {
+          type: 'string',
+          example: 'No questions found for teacher',
+        },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - Database or server error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Internal server error' },
+      },
+    },
+  })
+  async getQuestionsByTeacherId(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<QuestionResponseDto[]> {
+    const teacherId = req.user.id; // Get teacher ID from x-user-id header (via req.user.id)
+
+    LoggerUtil.logInfo(
+      this.logger,
+      'QuestionsController',
+      'Fetching questions by teacher ID',
+      {
+        teacherId,
+      },
+    );
+
+    try {
+      const result = await this.questionsService.getQuestionsByTeacherId(teacherId);
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'QuestionsController',
+        'Questions by teacher retrieved successfully',
+        {
+          teacherId,
+          questionsCount: result.length,
+        },
+      );
+
+      return result;
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuestionsController',
+        'Failed to retrieve questions by teacher',
+        error,
+        {
+          teacherId,
+        },
       );
       throw error;
     }

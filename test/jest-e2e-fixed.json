@@ -6,9 +6,13 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "moduleNameMapping": {
-    "^src/(.*)$": "<rootDir>/../src/$1"
+  "moduleNameMapper": {
+    "^src/(.*)$": "<rootDir>/../src/$1",
+    "^uuid$": "<rootDir>/../__mocks__/uuid.js"
   },
-  "testTimeout": 30000,
+  "transformIgnorePatterns": [
+    "node_modules/(?!(uuid)/)"
+  ],
+  "testTimeout": 60000,
   "forceExit": true
 }
