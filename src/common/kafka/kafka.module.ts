@@ -5,6 +5,7 @@ import { KafkaConfig } from './interfaces/kafka-config.interface';
 import { ContentEventProducer } from './producers/content-event.producer';
 import { StudentProgressEventConsumer } from './consumers/student-progress-event.consumer';
 import { UpdateMasteryConsumer } from './consumers/update-mastery.consumer';
+import { LearningPathConsumer } from './consumers/learning-path.consumer';
 import { Neo4jModule } from '../neo4j/neo4j.module';
 
 @Global()
@@ -63,8 +64,9 @@ export class KafkaModule {
         ContentEventProducer,
         StudentProgressEventConsumer,
         UpdateMasteryConsumer,
+        LearningPathConsumer,
       ],
-      exports: [KafkaService, ContentEventProducer],
+      exports: [KafkaService, ContentEventProducer, LearningPathConsumer],
       global: true,
     };
   }
