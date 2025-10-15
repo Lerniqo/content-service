@@ -3,13 +3,19 @@ import {
   Body,
   Controller,
   Post,
+  Get,
+  Put,
+  Delete,
+  Param,
   UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { CreateQuestionResponseDto } from './dto/create-question-response.dto';
+import { UpdateQuestionDto } from './dto/update-question.dto';
+import { QuestionResponseDto } from './dto/question-response.dto';
 import { QuestionsService } from './questions.service';
 import { PinoLogger } from 'nestjs-pino';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -169,6 +175,371 @@ export class QuestionsController {
         {
           questionId: createQuestionDto.id,
         },
+      );
+      throw error;
+    }
+  }
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get all questions',
+    description:
+      'Retrieves all questions from the database. This endpoint is public and requires no authentication.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Questions retrieved successfully',
+    type: [QuestionResponseDto],
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - Database or server error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Internal server error' },
+      },
+    },
+  })
+  async findAll(): Promise<QuestionResponseDto[]> {
+    LoggerUtil.logInfo(
+      this.logger,
+      'QuestionsController',
+      'Fetching all questions',
+    );
+
+    try {
+      const result = await this.questionsService.findAll();
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'QuestionsController',
+        'Questions fetched successfully',
+        { count: result.length },
+      );
+
+      return result;
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuestionsController',
+        'Failed to fetch questions',
+        error,
+      );
+      throw error;
+    }
+  }
+
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get question by ID',
+    description:
+      'Retrieves a specific question by its ID. This endpoint is public and requires no authentication.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the question',
+    example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Question retrieved successfully',
+    type: QuestionResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Question with specified ID not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: {
+          type: 'string',
+          example: 'Question with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 not found',
+        },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - Database or server error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Internal server error' },
+      },
+    },
+  })
+  async findOne(@Param('id') id: string): Promise<QuestionResponseDto> {
+    LoggerUtil.logInfo(
+      this.logger,
+      'QuestionsController',
+      'Fetching question by ID',
+      { questionId: id },
+    );
+
+    try {
+      const result = await this.questionsService.findOne(id);
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'QuestionsController',
+        'Question fetched successfully',
+        { questionId: id },
+      );
+
+      return result;
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuestionsController',
+        'Failed to fetch question',
+        error,
+        { questionId: id },
+      );
+      throw error;
+    }
+  }
+
+  @Put(':id')
+  @HttpCode(HttpStatus.OK)
+  @Roles('admin')
+  @ApiOperation({
+    summary: 'Update a question',
+    description:
+      'Updates an existing question in the graph database. Admin role required.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the question to update',
+    example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+  })
+  @ApiBody({
+    type: UpdateQuestionDto,
+    description: 'The question data to update',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Question updated successfully',
+    type: QuestionResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid input data or validation errors',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: {
+          oneOf: [
+            { type: 'string', example: 'Validation failed' },
+            {
+              type: 'array',
+              items: { type: 'string' },
+              example: [
+                'Correct answer must be one of the provided options',
+              ],
+            },
+          ],
+        },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Unauthorized' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin role required',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 403 },
+        message: { type: 'string', example: 'Forbidden resource' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Question with specified ID not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: {
+          type: 'string',
+          example: 'Question with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 not found',
+        },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - Database or server error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Internal server error' },
+      },
+    },
+  })
+  async update(
+    @Param('id') id: string,
+    @Body() updateQuestionDto: UpdateQuestionDto,
+  ): Promise<QuestionResponseDto> {
+    LoggerUtil.logInfo(
+      this.logger,
+      'QuestionsController',
+      'Updating question',
+      {
+        questionId: id,
+        hasQuestionText: !!updateQuestionDto.questionText,
+        hasOptions: !!updateQuestionDto.options,
+        hasCorrectAnswer: !!updateQuestionDto.correctAnswer,
+        hasTags: !!updateQuestionDto.tags,
+        hasExplanation: !!updateQuestionDto.explanation,
+      },
+    );
+
+    try {
+      const result = await this.questionsService.updateQuestion(id, updateQuestionDto);
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'QuestionsController',
+        'Question updated successfully',
+        { questionId: id },
+      );
+
+      return result;
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuestionsController',
+        'Failed to update question',
+        error,
+        { questionId: id },
+      );
+      throw error;
+    }
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @Roles('admin')
+  @ApiOperation({
+    summary: 'Delete a question',
+    description:
+      'Deletes a question from the graph database. Admin role required.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the question to delete',
+    example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Question deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Question with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 deleted successfully',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Unauthorized' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin role required',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 403 },
+        message: { type: 'string', example: 'Forbidden resource' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Question with specified ID not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: {
+          type: 'string',
+          example: 'Question with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 not found',
+        },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - Database or server error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Internal server error' },
+      },
+    },
+  })
+  async remove(@Param('id') id: string): Promise<{ message: string }> {
+    LoggerUtil.logInfo(
+      this.logger,
+      'QuestionsController',
+      'Deleting question',
+      { questionId: id },
+    );
+
+    try {
+      const result = await this.questionsService.deleteQuestion(id);
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'QuestionsController',
+        'Question deleted successfully',
+        { questionId: id },
+      );
+
+      return result;
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuestionsController',
+        'Failed to delete question',
+        error,
+        { questionId: id },
       );
       throw error;
     }

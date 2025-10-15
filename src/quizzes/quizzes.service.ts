@@ -8,6 +8,7 @@ import {
 import { PinoLogger } from 'nestjs-pino';
 import { Neo4jService } from '../common/neo4j/neo4j.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
+import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { CreateQuizResponseDto } from './dto/create-quiz-response.dto';
 import { QuizResponseDto } from './dto/quiz-response.dto';
 import { QuizQuestionDto } from './dto/quiz-question.dto';
@@ -45,6 +46,107 @@ export class QuizzesService {
     this.logger.setContext(QuizzesService.name);
   }
 
+
+  async getAllQuizzes(): Promise<QuizResponseDto[]> {
+    LoggerUtil.logInfo(
+      this.logger,
+      'QuizzesService',
+      'Fetching all quizzes',
+      {},
+    );
+
+    const cypher = `
+      MATCH (quiz:Quiz)
+      
+      // Get all questions included in each quiz
+      OPTIONAL MATCH (quiz)-[:INCLUDES]->(question:Question)
+      
+      RETURN 
+        quiz.id as id,
+        quiz.title as title,
+        quiz.description as description,
+        quiz.timeLimit as timeLimit,
+        quiz.createdAt as createdAt,
+        quiz.updatedAt as updatedAt,
+        
+        // Collect questions for each quiz
+        COLLECT(DISTINCT {
+          id: question.id,
+          questionText: question.questionText,
+          options: question.options,
+          correctAnswer: question.correctAnswer,
+          explanation: question.explanation,
+          tags: question.tags,
+          createdAt: question.createdAt,
+          updatedAt: question.updatedAt
+        }) as questions
+      ORDER BY quiz.createdAt DESC
+    `;
+
+    try {
+      const rawResult = await this.neo4jService.read(cypher, {}) as unknown;
+      const result = rawResult as QuizQueryResult[];
+
+      if (!result || result.length === 0) {
+        LoggerUtil.logInfo(
+          this.logger,
+          'QuizzesService',
+          'No quizzes found',
+          {},
+        );
+        return [];
+      }
+
+      const quizzes = result.map((quizData) => {
+        // Filter out null questions (when no questions exist)
+        const questions = quizData.questions
+          .filter((question: QuestionData) => question.id !== null)
+          .map(
+            (question: QuestionData) =>
+              new QuizQuestionDto(
+                question.id!,
+                question.questionText!,
+                question.options!,
+                question.correctAnswer!,
+                question.explanation ?? undefined,
+                question.tags ?? undefined,
+                question.createdAt ?? undefined,
+                question.updatedAt ?? undefined,
+              ),
+          );
+
+        return new QuizResponseDto(
+          quizData.id,
+          quizData.title,
+          quizData.timeLimit,
+          questions,
+          quizData.description ?? undefined,
+          quizData.createdAt ?? undefined,
+          quizData.updatedAt ?? undefined,
+        );
+      });
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'QuizzesService',
+        'All quizzes retrieved successfully',
+        {
+          quizzesCount: quizzes.length,
+        },
+      );
+
+      return quizzes;
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuizzesService',
+        'Failed to retrieve all quizzes',
+        error,
+        {},
+      );
+      throw error;
+    }
+  }
 
   async getQuizzesByConceptId(conceptId: string): Promise<QuizResponseDto[]> {
     LoggerUtil.logInfo(
@@ -650,6 +752,247 @@ export class QuizzesService {
         { userId },
       );
       // Don't throw here as this is not critical for the creation operation
+    }
+  }
+
+  async updateQuiz(quizId: string, updateQuizDto: UpdateQuizDto, userId: string): Promise<QuizResponseDto> {
+    LoggerUtil.logInfo(
+      this.logger,
+      'QuizzesService',
+      'Updating quiz',
+      {
+        quizId,
+        userId,
+        updates: Object.keys(updateQuizDto),
+      },
+    );
+
+    try {
+      // First verify the quiz exists
+      await this.getQuizById(quizId);
+
+      // If concept is being changed, verify it exists
+      if (updateQuizDto.conceptId) {
+        await this.verifyConceptExists(updateQuizDto.conceptId);
+      }
+
+      // If questions are being changed, verify they exist
+      if (updateQuizDto.questionIds) {
+        await this.verifyQuestionsExist(updateQuizDto.questionIds);
+      }
+
+      // Update the quiz node properties
+      if (updateQuizDto.title || updateQuizDto.description !== undefined || updateQuizDto.timeLimit) {
+        await this.updateQuizNode(quizId, updateQuizDto);
+      }
+
+      // Update TESTS relationship if concept is being changed
+      if (updateQuizDto.conceptId) {
+        await this.updateTestsRelationship(quizId, updateQuizDto.conceptId);
+      }
+
+      // Update INCLUDES relationships if questions are being changed
+      if (updateQuizDto.questionIds) {
+        await this.updateIncludesRelationships(quizId, updateQuizDto.questionIds);
+      }
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'QuizzesService',
+        'Quiz updated successfully',
+        { quizId, userId },
+      );
+
+      // Return the updated quiz
+      return await this.getQuizById(quizId);
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuizzesService',
+        'Failed to update quiz',
+        error,
+        { quizId, userId },
+      );
+      throw error;
+    }
+  }
+
+  async deleteQuiz(quizId: string, userId: string): Promise<void> {
+    LoggerUtil.logInfo(
+      this.logger,
+      'QuizzesService',
+      'Deleting quiz',
+      { quizId, userId },
+    );
+
+    try {
+      // Verify the quiz exists
+      await this.getQuizById(quizId);
+
+      // Delete the quiz and all its relationships
+      const query = `
+        MATCH (q:Quiz {id: $quizId})
+        DETACH DELETE q
+        RETURN count(q) as deletedCount
+      `;
+
+      const result = (await this.neo4jService.write(query, { quizId })) as Array<{ deletedCount: number }>;
+
+      if (!result || result.length === 0 || result[0].deletedCount === 0) {
+        throw new InternalServerErrorException('Failed to delete quiz');
+      }
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'QuizzesService',
+        'Quiz deleted successfully',
+        { quizId, userId },
+      );
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      LoggerUtil.logError(
+        this.logger,
+        'QuizzesService',
+        'Failed to delete quiz',
+        error,
+        { quizId, userId },
+      );
+      throw error;
+    }
+  }
+
+  private async updateQuizNode(quizId: string, updateQuizDto: UpdateQuizDto): Promise<void> {
+    const updatedAt = new Date().toISOString();
+    const setClauses: string[] = ['q.updatedAt = $updatedAt'];
+    const params: Record<string, any> = { quizId, updatedAt };
+
+    if (updateQuizDto.title !== undefined) {
+      setClauses.push('q.title = $title');
+      params.title = updateQuizDto.title;
+    }
+
+    if (updateQuizDto.description !== undefined) {
+      setClauses.push('q.description = $description');
+      params.description = updateQuizDto.description || null;
+    }
+
+    if (updateQuizDto.timeLimit !== undefined) {
+      setClauses.push('q.timeLimit = $timeLimit');
+      params.timeLimit = updateQuizDto.timeLimit;
+    }
+
+    const query = `
+      MATCH (q:Quiz {id: $quizId})
+      SET ${setClauses.join(', ')}
+      RETURN q.id as id
+    `;
+
+    try {
+      const result = (await this.neo4jService.write(query, params)) as Array<{ id: string }>;
+
+      if (result.length === 0) {
+        throw new InternalServerErrorException('Failed to update quiz node');
+      }
+
+      LoggerUtil.logDebug(
+        this.logger,
+        'QuizzesService',
+        'Quiz node updated successfully',
+        { quizId },
+      );
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuizzesService',
+        'Error updating quiz node',
+        error,
+        { quizId, params },
+      );
+
+      throw new InternalServerErrorException('Failed to update quiz node');
+    }
+  }
+
+  private async updateTestsRelationship(quizId: string, conceptId: string): Promise<void> {
+    // Delete existing TESTS relationship and create new one
+    const query = `
+      MATCH (quiz:Quiz {id: $quizId})
+      OPTIONAL MATCH (quiz)-[r:TESTS]->(:SyllabusConcept)
+      DELETE r
+      WITH quiz
+      MATCH (concept:SyllabusConcept {conceptId: $conceptId})
+      CREATE (quiz)-[:TESTS]->(concept)
+      RETURN concept.conceptId as conceptId
+    `;
+
+    try {
+      const result = (await this.neo4jService.write(query, {
+        quizId,
+        conceptId,
+      })) as Array<{ conceptId: string }>;
+
+      if (result.length === 0) {
+        throw new InternalServerErrorException(
+          'Failed to update TESTS relationship',
+        );
+      }
+
+      LoggerUtil.logDebug(
+        this.logger,
+        'QuizzesService',
+        'TESTS relationship updated successfully',
+        { quizId, conceptId },
+      );
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuizzesService',
+        'Error updating TESTS relationship',
+        error,
+        { quizId, conceptId },
+      );
+
+      throw new InternalServerErrorException(
+        'Failed to update TESTS relationship',
+      );
+    }
+  }
+
+  private async updateIncludesRelationships(quizId: string, questionIds: string[]): Promise<void> {
+    // Delete existing INCLUDES relationships
+    const deleteQuery = `
+      MATCH (quiz:Quiz {id: $quizId})-[r:INCLUDES]->(:Question)
+      DELETE r
+      RETURN count(r) as deletedCount
+    `;
+
+    try {
+      await this.neo4jService.write(deleteQuery, { quizId });
+
+      // Create new INCLUDES relationships
+      await this.createIncludesRelationships(quizId, questionIds);
+
+      LoggerUtil.logDebug(
+        this.logger,
+        'QuizzesService',
+        'INCLUDES relationships updated successfully',
+        { quizId, questionIds },
+      );
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'QuizzesService',
+        'Error updating INCLUDES relationships',
+        error,
+        { quizId, questionIds },
+      );
+
+      throw new InternalServerErrorException(
+        'Failed to update INCLUDES relationships',
+      );
     }
   }
 
