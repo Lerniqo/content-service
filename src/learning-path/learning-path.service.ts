@@ -183,6 +183,7 @@ export class LearningPathService {
     );
 
     const timestamp = new Date().toISOString();
+    const learningPathId = `lp_${uuidv4().replace(/-/g, '')}`;
 
     // Transform steps from snake_case to camelCase
     // Note: AI service returns resource names/descriptions, not IDs
@@ -196,20 +197,35 @@ export class LearningPathService {
     }));
 
     const cypher = `
-      // Find the user and their existing learning path
-      MATCH (u:User {id: $userId})-[:HAS_LEARNING_PATH]->(lp:LearningPath)
+      // Find the user
+      MATCH (u:User {id: $userId})
       
-      // Delete old steps if any
-      OPTIONAL MATCH (lp)-[r2:HAS_STEP]->(oldStep:LearningPathStep)
+      // Find existing learning path or prepare to create a new one
+      OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(existingLp:LearningPath)
+      
+      // Delete old learning path and steps if any
+      OPTIONAL MATCH (existingLp)-[r2:HAS_STEP]->(oldStep:LearningPathStep)
       DETACH DELETE oldStep
       
-      // Update the learning path node with generated data
-      WITH u, lp
-      SET lp.difficultyLevel = $difficultyLevel,
-          lp.totalDuration = $totalDuration,
-          lp.masteryScores = $masteryScores,
-          lp.status = 'completed',
-          lp.updatedAt = $timestamp
+      // Delete the old learning path node
+      WITH u, existingLp
+      DETACH DELETE existingLp
+      
+      // Create new learning path node with generated data
+      WITH u
+      CREATE (lp:LearningPath {
+        id: $learningPathId,
+        learningGoal: $learningGoal,
+        difficultyLevel: $difficultyLevel,
+        totalDuration: $totalDuration,
+        masteryScores: $masteryScores,
+        status: 'completed',
+        createdAt: $timestamp,
+        updatedAt: $timestamp
+      })
+      
+      // Create relationship between user and learning path
+      CREATE (u)-[:HAS_LEARNING_PATH]->(lp)
       
       // Create learning path steps
       WITH lp
@@ -225,13 +241,15 @@ export class LearningPathService {
       })
       CREATE (lp)-[:HAS_STEP]->(s)
       
-      // Return the updated learning path
+      // Return the created/updated learning path
       WITH lp
       RETURN lp.id as learningPathId
     `;
 
     const params = {
       userId: learningPathData.user_id,
+      learningPathId,
+      learningGoal: learningPathData.learning_path.goal || learningPathData.goal || 'Learning Path',
       difficultyLevel: learningPathData.learning_path.difficulty_level,
       totalDuration: learningPathData.learning_path.total_duration,
       steps: transformedSteps,
@@ -243,13 +261,13 @@ export class LearningPathService {
       const result = await this.neo4jService.write(cypher, params);
 
       if (!result || result.length === 0) {
-        LoggerUtil.logWarn(
+        LoggerUtil.logError(
           this.logger,
           'LearningPathService',
-          'No learning path found to update. User may not have requested a learning path.',
+          'Failed to create/update learning path - no result returned',
           { userId: learningPathData.user_id },
         );
-        return;
+        throw new InternalServerErrorException('Failed to save learning path');
       }
 
       LoggerUtil.logInfo(
