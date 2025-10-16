@@ -3,38 +3,24 @@ import {
   Controller,
   Post,
   Get,
-  Param,
   Body,
   Req,
-  UseGuards,
   HttpCode,
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { LearningPathService } from './learning-path.service';
 import { RequestLearningPathDto } from './dto/request-learning-path.dto';
 import { LearningPathResponseDto } from './dto/learning-path-response.dto';
 import { GetLearningPathResponseDto } from './dto/learning-path.dto';
 import { CreateLearningPathDto } from './dto/create-learning-path.dto';
 import { PinoLogger } from 'nestjs-pino';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/roles/roles.decorator';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { LoggerUtil } from '../common/utils/logger.util';
-
-// Extend the Request interface to include user
-interface AuthenticatedRequest extends Request {
-  user: {
-    id: string;
-    role: string[];
-    [key: string]: any;
-  };
-}
 
 @ApiTags('learning-path')
 @Controller('learning-path')
-@UseGuards(RolesGuard)
 export class LearningPathController {
   constructor(
     private readonly learningPathService: LearningPathService,
@@ -45,7 +31,6 @@ export class LearningPathController {
 
   @Post('request')
   @HttpCode(HttpStatus.ACCEPTED)
-  @Roles('student', 'teacher', 'admin')
   @ApiOperation({
     summary: 'Request a learning path generation',
     description:
@@ -65,16 +50,16 @@ export class LearningPathController {
     description: 'Failed to initiate learning path generation',
   })
   async requestLearningPath(
-    @Req() req: AuthenticatedRequest,
+    @Req() req: Request,
     @Body() dto: RequestLearningPathDto,
   ): Promise<LearningPathResponseDto> {
     const userIdFromHeader = req['headers']['x-user-id'] as string | string[] | undefined;
     const userId = Array.isArray(userIdFromHeader) 
       ? userIdFromHeader[0] 
-      : userIdFromHeader || req.user?.id;
+      : userIdFromHeader;
 
     if (!userId) {
-      throw new BadRequestException('User ID is required');
+      throw new BadRequestException('User ID is required in x-user-id header');
     }
 
     LoggerUtil.logInfo(
@@ -101,7 +86,6 @@ export class LearningPathController {
 
   @Post('create')
   @HttpCode(HttpStatus.CREATED)
-  @Roles('student', 'teacher', 'admin')
   @ApiOperation({
     summary: 'Create a new learning path',
     description:
@@ -121,13 +105,16 @@ export class LearningPathController {
     description: 'Failed to create learning path',
   })
   async createLearningPath(
-    @Req() req: AuthenticatedRequest,
+    @Req() req: Request,
     @Body() dto: CreateLearningPathDto,
   ): Promise<GetLearningPathResponseDto> {
-    const userId = req.user?.id;
+    const userIdFromHeader = req['headers']['x-user-id'] as string | string[] | undefined;
+    const userId = Array.isArray(userIdFromHeader) 
+      ? userIdFromHeader[0] 
+      : userIdFromHeader;
 
     if (!userId) {
-      throw new BadRequestException('User ID is required');
+      throw new BadRequestException('User ID is required in x-user-id header');
     }
 
     LoggerUtil.logInfo(
@@ -154,7 +141,6 @@ export class LearningPathController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @Roles('student', 'teacher', 'admin')
   @ApiOperation({
     summary: 'Get user learning path',
     description: 'Retrieve the learning path for the current user (one user can only have one learning path)',
@@ -173,15 +159,15 @@ export class LearningPathController {
     description: 'Failed to fetch learning path',
   })
   async getLearningPathByUserId(
-    @Req() req: AuthenticatedRequest,
+    @Req() req: Request,
   ): Promise<GetLearningPathResponseDto> {
     const userIdFromHeader = req['headers']['x-user-id'] as string | string[] | undefined;
     const userId = Array.isArray(userIdFromHeader) 
       ? userIdFromHeader[0] 
-      : userIdFromHeader || req.user?.id;
+      : userIdFromHeader;
 
     if (!userId) {
-      throw new BadRequestException('User ID is required');
+      throw new BadRequestException('User ID is required in x-user-id header');
     }
 
     LoggerUtil.logInfo(
