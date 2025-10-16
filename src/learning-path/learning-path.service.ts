@@ -79,15 +79,17 @@ export class LearningPathService {
       
       WITH u
       // Delete existing learning path if any (one user can only have one learning path)
-      OPTIONAL MATCH (u)-[r:HAS_LEARNING_PATH]->(oldLp:LearningPath)
+      OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(oldLp:LearningPath)
+      WITH u, oldLp
+      WHERE oldLp IS NOT NULL
       CALL {
         WITH oldLp
-        OPTIONAL MATCH (oldLp)-[r2:HAS_STEP]->(oldStep:LearningPathStep)
+        OPTIONAL MATCH (oldLp)-[:HAS_STEP]->(oldStep:LearningPathStep)
         DETACH DELETE oldStep, oldLp
       }
       
-      // Create the new learning path node with processing status
       WITH u
+      // Create the new learning path node with processing status
       CREATE (lp:LearningPath {
         id: $learningPathId,
         learningGoal: $learningGoal,
@@ -209,14 +211,16 @@ export class LearningPathService {
       WITH u
       // Delete existing learning path if any
       OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(oldLp:LearningPath)
+      WITH u, oldLp
+      WHERE oldLp IS NOT NULL
       CALL {
         WITH oldLp
         OPTIONAL MATCH (oldLp)-[:HAS_STEP]->(s)
         DETACH DELETE s, oldLp
       }
       
-      // Create new learning path node with generated data
       WITH u
+      // Create new learning path node with generated data
       CREATE (lp:LearningPath {
         id: $learningPathId,
         learningGoal: $learningGoal,
@@ -245,8 +249,8 @@ export class LearningPathService {
       })
       CREATE (lp)-[:HAS_STEP]->(s)
       
-      // Return the created/updated learning path
       WITH lp
+      // Return the created/updated learning path
       RETURN lp.id as learningPathId
     `;
 
@@ -315,15 +319,17 @@ export class LearningPathService {
       
       WITH u
       // Delete existing learning path if any (one user can only have one learning path)
-      OPTIONAL MATCH (u)-[r:HAS_LEARNING_PATH]->(oldLp:LearningPath)
+      OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(oldLp:LearningPath)
+      WITH u, oldLp
+      WHERE oldLp IS NOT NULL
       CALL {
         WITH oldLp
-        OPTIONAL MATCH (oldLp)-[r2:HAS_STEP]->(oldStep:LearningPathStep)
+        OPTIONAL MATCH (oldLp)-[:HAS_STEP]->(oldStep:LearningPathStep)
         DETACH DELETE oldStep, oldLp
       }
       
-      // Create the new learning path node
       WITH u
+      // Create the new learning path node
       CREATE (lp:LearningPath {
         id: $learningPathId,
         learningGoal: $learningGoal,
@@ -340,7 +346,7 @@ export class LearningPathService {
       WITH lp
       UNWIND $steps AS step
       CREATE (s:LearningPathStep {
-        id: $learningPathId + '_step_' + toString(step.stepNumber),
+        id: lp.id + '_step_' + toString(step.stepNumber),
         stepNumber: step.stepNumber,
         title: step.title,
         description: step.description,
@@ -350,12 +356,12 @@ export class LearningPathService {
       })
       CREATE (lp)-[:HAS_STEP]->(s)
       
-      // Return the created learning path and steps
       WITH lp
+      // Return the created learning path and steps
       OPTIONAL MATCH (lp)-[:HAS_STEP]->(step:LearningPathStep)
       
-      WITH lp, step
-      ORDER BY step.stepNumber
+      WITH lp, COLLECT(step) as steps
+      ORDER BY lp.createdAt DESC
       
       RETURN 
         lp.id as id,
@@ -366,14 +372,14 @@ export class LearningPathService {
           goal: lp.learningGoal,
           difficultyLevel: lp.difficultyLevel,
           totalDuration: lp.totalDuration,
-          steps: COLLECT(DISTINCT {
-            stepNumber: step.stepNumber,
-            title: step.title,
-            description: step.description,
-            estimatedDuration: step.estimatedDuration,
-            resources: step.resources,
-            prerequisites: step.prerequisites
-          })
+          steps: [s IN steps WHERE s IS NOT NULL | {
+            stepNumber: s.stepNumber,
+            title: s.title,
+            description: s.description,
+            estimatedDuration: s.estimatedDuration,
+            resources: s.resources,
+            prerequisites: s.prerequisites
+          }]
         } as learningPath
       LIMIT 1
     `;
