@@ -197,8 +197,9 @@ export class LearningPathService {
     }));
 
     const cypher = `
-      // Find the user
-      MATCH (u:User {id: $userId})
+      // Find or create the user
+      MERGE (u:User {id: $userId})
+      ON CREATE SET u.createdAt = $timestamp
       
       // Find existing learning path or prepare to create a new one
       OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(existingLp:LearningPath)
