@@ -201,6 +201,9 @@ export class LearningPathService {
       MERGE (u:User {id: $userId})
       ON CREATE SET u.createdAt = $timestamp
       
+      // Pass the user to the next part of the query
+      WITH u
+      
       // Find existing learning path or prepare to create a new one
       OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(existingLp:LearningPath)
       
