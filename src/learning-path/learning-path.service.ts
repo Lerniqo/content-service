@@ -534,19 +534,15 @@ export class LearningPathService {
     );
 
     const cypher = `
-      // Find or create the user
-      MERGE (u:User {id: $userId})
-      ON CREATE SET u.createdAt = $timestamp
+      // Find the user
+      MATCH (u:User {id: $userId})
       
-      // Pass the user to the next part
-      WITH u
-      
-      // Try to find the learning path
+      // Find the user's learning path
       OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(lp:LearningPath)
       OPTIONAL MATCH (lp)-[:HAS_STEP]->(step:LearningPathStep)
       
       WITH lp, step
-      ORDER BY step.stepNumber
+      ORDER BY step.stepNumber ASC
       
       WITH lp, COLLECT(step) as steps
       
@@ -559,22 +555,22 @@ export class LearningPathService {
         lp.createdAt as createdAt,
         lp.updatedAt as updatedAt,
         CASE 
-          WHEN lp.status = 'completed' AND SIZE(steps) > 0 AND steps[0] IS NOT NULL THEN {
+          WHEN lp.status = 'completed' THEN {
             goal: lp.learningGoal,
             difficultyLevel: lp.difficultyLevel,
             totalDuration: lp.totalDuration,
-            steps: [step IN steps WHERE step IS NOT NULL | {
-              stepNumber: step.stepNumber,
-              title: step.title,
-              description: step.description,
-              estimatedDuration: step.estimatedDuration,
-              resources: step.resources,
-              prerequisites: step.prerequisites
+            steps: [s IN steps WHERE s IS NOT NULL | {
+              stepNumber: s.stepNumber,
+              title: s.title,
+              description: s.description,
+              estimatedDuration: s.estimatedDuration,
+              resources: s.resources,
+              prerequisites: s.prerequisites
             }]
           }
           ELSE null
         END as learningPath
-  `;
+    `;
 
   const timestamp = new Date().toISOString();
 
