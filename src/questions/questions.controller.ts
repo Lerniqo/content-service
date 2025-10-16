@@ -46,7 +46,7 @@ export class QuestionsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles('admin')
+  @Roles('')
   @ApiOperation({
     summary: 'Create a new question',
     description:

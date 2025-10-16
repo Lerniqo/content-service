@@ -73,8 +73,9 @@ export class LearningPathService {
 
     // Create initial learning path with processing status in Neo4j
     const cypherCreateProcessing = `
-      // Find the user
-      MATCH (u:User {id: $userId})
+      // Find or create the user
+      MERGE (u:User {id: $userId})
+      ON CREATE SET u.createdAt = $timestamp
       
       // Delete existing learning path if any (one user can only have one learning path)
       OPTIONAL MATCH (u)-[r:HAS_LEARNING_PATH]->(oldLp:LearningPath)
@@ -309,8 +310,9 @@ export class LearningPathService {
     const timestamp = new Date().toISOString();
 
     const cypher = `
-      // Find the user
-      MATCH (u:User {id: $userId})
+      // Find or create the user
+      MERGE (u:User {id: $userId})
+      ON CREATE SET u.createdAt = $timestamp
       
       // Delete existing learning path if any (one user can only have one learning path)
       OPTIONAL MATCH (u)-[r:HAS_LEARNING_PATH]->(oldLp:LearningPath)
@@ -431,8 +433,15 @@ export class LearningPathService {
       { userId },
     );
 
+    const timestamp = new Date().toISOString();
+
     const cypher = `
-      MATCH (u:User {id: $userId})-[:HAS_LEARNING_PATH]->(lp:LearningPath)
+      // Find or create the user
+      MERGE (u:User {id: $userId})
+      ON CREATE SET u.createdAt = $timestamp
+      
+      // Try to find learning paths
+      OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(lp:LearningPath)
       OPTIONAL MATCH (lp)-[:HAS_STEP]->(step:LearningPathStep)
       
       WITH lp, step
@@ -466,33 +475,36 @@ export class LearningPathService {
     `;
 
     try {
-      const result = await this.neo4jService.read(cypher, { userId });
+      const result = await this.neo4jService.read(cypher, { userId, timestamp });
 
-      return result.map((record: any) => {
-        if (record.status === 'processing') {
+      // Filter out null results (when user has no learning path)
+      return result
+        .filter((record: any) => record.id !== null)
+        .map((record: any) => {
+          if (record.status === 'processing') {
+            return {
+              id: record.id,
+              userId,
+              learningGoal: record.learningGoal,
+              status: 'processing',
+              requestId: record.requestId,
+              learningPath: null,
+              createdAt: record.createdAt,
+              updatedAt: record.updatedAt,
+            } as any;
+          }
+
           return {
             id: record.id,
             userId,
             learningGoal: record.learningGoal,
-            status: 'processing',
-            requestId: record.requestId,
-            learningPath: null,
+            status: record.status || 'completed',
+            learningPath: record.learningPath,
+            masteryScores: record.masteryScores ? JSON.parse(record.masteryScores) : undefined,
             createdAt: record.createdAt,
             updatedAt: record.updatedAt,
           } as any;
-        }
-
-        return {
-          id: record.id,
-          userId,
-          learningGoal: record.learningGoal,
-          status: record.status || 'completed',
-          learningPath: record.learningPath,
-          masteryScores: record.masteryScores ? JSON.parse(record.masteryScores) : undefined,
-          createdAt: record.createdAt,
-          updatedAt: record.updatedAt,
-        } as any;
-      });
+        });
     } catch (error) {
       LoggerUtil.logError(
         this.logger,
@@ -518,7 +530,12 @@ export class LearningPathService {
     );
 
     const cypher = `
-      MATCH (u:User {id: $userId})-[:HAS_LEARNING_PATH]->(lp:LearningPath)
+      // Find or create the user
+      MERGE (u:User {id: $userId})
+      ON CREATE SET u.createdAt = $timestamp
+      
+      // Try to find the learning path
+      OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(lp:LearningPath)
       OPTIONAL MATCH (lp)-[:HAS_STEP]->(step:LearningPathStep)
       
       WITH lp, step
@@ -550,12 +567,15 @@ export class LearningPathService {
         END as learningPath
     `;
 
+    const timestamp = new Date().toISOString();
+
     try {
       const result = await this.neo4jService.read(cypher, {
         userId,
+        timestamp,
       });
 
-      if (!result || result.length === 0) {
+      if (!result || result.length === 0 || !result[0].id) {
         throw new NotFoundException('Learning path not found');
       }
 
