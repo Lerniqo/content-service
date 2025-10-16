@@ -153,50 +153,6 @@ export class LearningPathController {
   @HttpCode(HttpStatus.OK)
   @Roles('student', 'teacher', 'admin')
   @ApiOperation({
-    summary: 'Get all learning paths for the authenticated user',
-    description: 'Retrieve all learning paths created for the current user',
-  })
-  @ApiHeader({
-    name: 'x-user-id',
-    description: 'User ID',
-    required: true,
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Learning paths retrieved successfully',
-    type: [GetLearningPathResponseDto],
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Failed to fetch learning paths',
-  })
-  async getUserLearningPaths(
-    @Headers('x-user-id') userId: string,
-  ): Promise<GetLearningPathResponseDto[]> {
-
-    LoggerUtil.logInfo(
-      this.logger,
-      'LearningPathController',
-      'Fetching user learning paths',
-      { userId },
-    );
-
-    const result = await this.learningPathService.getUserLearningPaths(userId);
-
-    LoggerUtil.logInfo(
-      this.logger,
-      'LearningPathController',
-      'Learning paths fetched successfully',
-      { userId, count: result.length },
-    );
-
-    return result;
-  }
-
-  @Get('')
-  @HttpCode(HttpStatus.OK)
-  @Roles('student', 'teacher', 'admin')
-  @ApiOperation({
     summary: 'Get user learning path',
     description: 'Retrieve the learning path for the current user (one user can only have one learning path)',
   })
