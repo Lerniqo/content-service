@@ -68,7 +68,7 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply()
-      .exclude('', 'health', 'syllabus', 'concepts/*path')
+      .exclude('syllabus', 'concepts/*path')
       .forRoutes('*');
   }
 }
