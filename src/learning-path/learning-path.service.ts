@@ -80,8 +80,11 @@ export class LearningPathService {
       WITH u
       // Delete existing learning path if any (one user can only have one learning path)
       OPTIONAL MATCH (u)-[r:HAS_LEARNING_PATH]->(oldLp:LearningPath)
-      OPTIONAL MATCH (oldLp)-[r2:HAS_STEP]->(oldStep:LearningPathStep)
-      DETACH DELETE oldStep, oldLp
+      CALL {
+        WITH oldLp
+        OPTIONAL MATCH (oldLp)-[r2:HAS_STEP]->(oldStep:LearningPathStep)
+        DETACH DELETE oldStep, oldLp
+      }
       
       // Create the new learning path node with processing status
       WITH u
@@ -203,19 +206,14 @@ export class LearningPathService {
       MERGE (u:User {id: $userId})
       ON CREATE SET u.createdAt = $timestamp
       
-      // Pass the user to the next part of the query
       WITH u
-      
-      // Find existing learning path or prepare to create a new one
-      OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(existingLp:LearningPath)
-      
-      // Delete old learning path and steps if any
-      OPTIONAL MATCH (existingLp)-[r2:HAS_STEP]->(oldStep:LearningPathStep)
-      DETACH DELETE oldStep
-      
-      // Delete the old learning path node
-      WITH u, existingLp
-      DETACH DELETE existingLp
+      // Delete existing learning path if any
+      OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(oldLp:LearningPath)
+      CALL {
+        WITH oldLp
+        OPTIONAL MATCH (oldLp)-[:HAS_STEP]->(s)
+        DETACH DELETE s, oldLp
+      }
       
       // Create new learning path node with generated data
       WITH u
@@ -315,10 +313,14 @@ export class LearningPathService {
       MERGE (u:User {id: $userId})
       ON CREATE SET u.createdAt = $timestamp
       
+      WITH u
       // Delete existing learning path if any (one user can only have one learning path)
       OPTIONAL MATCH (u)-[r:HAS_LEARNING_PATH]->(oldLp:LearningPath)
-      OPTIONAL MATCH (oldLp)-[r2:HAS_STEP]->(oldStep:LearningPathStep)
-      DETACH DELETE oldStep, oldLp
+      CALL {
+        WITH oldLp
+        OPTIONAL MATCH (oldLp)-[r2:HAS_STEP]->(oldStep:LearningPathStep)
+        DETACH DELETE oldStep, oldLp
+      }
       
       // Create the new learning path node
       WITH u
