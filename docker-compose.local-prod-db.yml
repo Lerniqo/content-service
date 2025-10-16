@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  content-service:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_USERNAME=${NEO4J_USERNAME}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - KAFKA_CLIENT_ID=${KAFKA_CLIENT_ID}
+      - KAFKA_CONNECTION_TIMEOUT=${KAFKA_CONNECTION_TIMEOUT}
+      - KAFKA_REQUEST_TIMEOUT=${KAFKA_REQUEST_TIMEOUT}
+      - KAFKA_INITIAL_RETRY_TIME=${KAFKA_INITIAL_RETRY_TIME}
+      - KAFKA_RETRIES=${KAFKA_RETRIES}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src:ro
+    networks:
+      - content-network
+
+networks:
+  content-network:
+    driver: bridge
