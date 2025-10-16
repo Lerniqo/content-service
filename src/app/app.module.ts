@@ -15,7 +15,6 @@ import { SyllabusModule } from '../syllabus/syllabus.module';
 import { ConceptsModule } from '../concepts/concepts.module';
 import { LearningPathModule } from '../learning-path/learning-path.module';
 import { ContestsModule } from '../contests/contests.module';
-import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
 
 @Module({
     imports: [
@@ -68,7 +67,7 @@ import { MockAuthMiddleware } from '../common/middleware/mock-auth.middleware';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(MockAuthMiddleware)
+      .apply()
       .exclude('', 'health', 'syllabus', 'concepts/*path')
       .forRoutes('*');
   }
