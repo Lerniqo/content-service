@@ -65,6 +65,36 @@ export class LearningPathService {
     );
 
     const eventId = `evt_${uuidv4().replace(/-/g, '')}`;
+    const learningPathId = `lp_${uuidv4().replace(/-/g, '')}`;
+    const timestamp = new Date().toISOString();
+
+    // Create initial learning path with processing status in Neo4j
+    const cypherCreateProcessing = `
+      // Find the user
+      MATCH (u:User {id: $userId})
+      
+      // Delete existing learning path if any (one user can only have one learning path)
+      OPTIONAL MATCH (u)-[r:HAS_LEARNING_PATH]->(oldLp:LearningPath)
+      OPTIONAL MATCH (oldLp)-[r2:HAS_STEP]->(oldStep:LearningPathStep)
+      DETACH DELETE oldStep, oldLp
+      
+      // Create the new learning path node with processing status
+      WITH u
+      CREATE (lp:LearningPath {
+        id: $learningPathId,
+        learningGoal: $learningGoal,
+        difficultyLevel: $currentLevel,
+        status: 'processing',
+        requestId: $requestId,
+        createdAt: $timestamp,
+        updatedAt: $timestamp
+      })
+      
+      // Create relationship between user and learning path
+      CREATE (u)-[:HAS_LEARNING_PATH]->(lp)
+      
+      RETURN lp.id as learningPathId
+    `;
 
     const learningGoalEvent: LearningGoalEvent = {
       eventId,
@@ -83,9 +113,26 @@ export class LearningPathService {
     };
 
     try {
+      // Create processing state in Neo4j
+      await this.neo4jService.write(cypherCreateProcessing, {
+        userId,
+        learningPathId,
+        learningGoal: dto.learningGoal,
+        currentLevel: dto.currentLevel,
+        requestId: eventId,
+        timestamp,
+      });
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'LearningPathService',
+        'Created learning path with processing status',
+        { learningPathId, requestId: eventId, userId },
+      );
+
       // Publish event to Kafka for AI service to consume
       await this.kafkaService.sendMessage({
-        topic: 'learning_goal',
+        topic: 'learning_goal.request',
         key: userId,
         value: JSON.stringify(learningGoalEvent),
       });
@@ -129,38 +176,29 @@ export class LearningPathService {
       { userId: learningPathData.user_id },
     );
 
-    const learningPathId = `lp_${uuidv4().replace(/-/g, '')}`;
     const timestamp = new Date().toISOString();
 
     const cypher = `
-      // Find the user
-      MATCH (u:User {id: $userId})
+      // Find the user and their existing learning path
+      MATCH (u:User {id: $userId})-[:HAS_LEARNING_PATH]->(lp:LearningPath)
       
-      // Delete existing learning path if any (one user can only have one learning path)
-      OPTIONAL MATCH (u)-[r:HAS_LEARNING_PATH]->(oldLp:LearningPath)
-      OPTIONAL MATCH (oldLp)-[r2:HAS_STEP]->(oldStep:LearningPathStep)
-      DETACH DELETE oldStep, oldLp
+      // Delete old steps if any
+      OPTIONAL MATCH (lp)-[r2:HAS_STEP]->(oldStep:LearningPathStep)
+      DETACH DELETE oldStep
       
-      // Create the new learning path node
-      WITH u
-      CREATE (lp:LearningPath {
-        id: $learningPathId,
-        learningGoal: $learningGoal,
-        difficultyLevel: $difficultyLevel,
-        totalDuration: $totalDuration,
-        masteryScores: $masteryScores,
-        createdAt: $timestamp,
-        updatedAt: $timestamp
-      })
-      
-      // Create relationship between user and learning path
-      CREATE (u)-[:HAS_LEARNING_PATH]->(lp)
+      // Update the learning path node with generated data
+      WITH u, lp
+      SET lp.difficultyLevel = $difficultyLevel,
+          lp.totalDuration = $totalDuration,
+          lp.masteryScores = $masteryScores,
+          lp.status = 'completed',
+          lp.updatedAt = $timestamp
       
       // Create learning path steps
       WITH lp
       UNWIND $steps AS step
       CREATE (s:LearningPathStep {
-        id: $learningPathId + '_step_' + toString(step.stepNumber),
+        id: lp.id + '_step_' + toString(step.stepNumber),
         stepNumber: step.stepNumber,
         title: step.title,
         description: step.description,
@@ -183,8 +221,6 @@ export class LearningPathService {
 
     const params = {
       userId: learningPathData.user_id,
-      learningPathId,
-      learningGoal: learningPathData.learning_goal,
       difficultyLevel: learningPathData.learning_path.difficulty_level,
       totalDuration: learningPathData.learning_path.total_duration,
       steps: learningPathData.learning_path.steps,
@@ -193,13 +229,23 @@ export class LearningPathService {
     };
 
     try {
-      await this.neo4jService.write(cypher, params);
+      const result = await this.neo4jService.write(cypher, params);
+
+      if (!result || result.length === 0) {
+        LoggerUtil.logWarn(
+          this.logger,
+          'LearningPathService',
+          'No learning path found to update. User may not have requested a learning path.',
+          { userId: learningPathData.user_id },
+        );
+        return;
+      }
 
       LoggerUtil.logInfo(
         this.logger,
         'LearningPathService',
         'Learning path saved successfully',
-        { learningPathId, userId: learningPathData.user_id },
+        { learningPathId: result[0].learningPathId, userId: learningPathData.user_id },
       );
     } catch (error) {
       LoggerUtil.logError(
@@ -370,37 +416,58 @@ export class LearningPathService {
       RETURN 
         lp.id as id,
         lp.learningGoal as learningGoal,
+        lp.status as status,
+        lp.requestId as requestId,
         lp.masteryScores as masteryScores,
         lp.createdAt as createdAt,
         lp.updatedAt as updatedAt,
-        {
-          goal: lp.learningGoal,
-          difficultyLevel: lp.difficultyLevel,
-          totalDuration: lp.totalDuration,
-          steps: COLLECT(DISTINCT {
-            stepNumber: step.stepNumber,
-            title: step.title,
-            description: step.description,
-            estimatedDuration: step.estimatedDuration,
-            resources: step.resources,
-            prerequisites: step.prerequisites
-          })
-        } as learningPath
+        CASE 
+          WHEN lp.status = 'completed' THEN {
+            goal: lp.learningGoal,
+            difficultyLevel: lp.difficultyLevel,
+            totalDuration: lp.totalDuration,
+            steps: COLLECT(DISTINCT {
+              stepNumber: step.stepNumber,
+              title: step.title,
+              description: step.description,
+              estimatedDuration: step.estimatedDuration,
+              resources: step.resources,
+              prerequisites: step.prerequisites
+            })
+          }
+          ELSE null
+        END as learningPath
       ORDER BY lp.createdAt DESC
     `;
 
     try {
       const result = await this.neo4jService.read(cypher, { userId });
 
-      return result.map((record: any) => ({
-        id: record.id,
-        userId,
-        learningGoal: record.learningGoal,
-        learningPath: record.learningPath,
-        masteryScores: record.masteryScores ? JSON.parse(record.masteryScores) : undefined,
-        createdAt: record.createdAt,
-        updatedAt: record.updatedAt,
-      }));
+      return result.map((record: any) => {
+        if (record.status === 'processing') {
+          return {
+            id: record.id,
+            userId,
+            learningGoal: record.learningGoal,
+            status: 'processing',
+            requestId: record.requestId,
+            learningPath: null,
+            createdAt: record.createdAt,
+            updatedAt: record.updatedAt,
+          } as any;
+        }
+
+        return {
+          id: record.id,
+          userId,
+          learningGoal: record.learningGoal,
+          status: record.status || 'completed',
+          learningPath: record.learningPath,
+          masteryScores: record.masteryScores ? JSON.parse(record.masteryScores) : undefined,
+          createdAt: record.createdAt,
+          updatedAt: record.updatedAt,
+        } as any;
+      });
     } catch (error) {
       LoggerUtil.logError(
         this.logger,
@@ -435,22 +502,27 @@ export class LearningPathService {
       RETURN 
         lp.id as id,
         lp.learningGoal as learningGoal,
+        lp.status as status,
+        lp.requestId as requestId,
         lp.masteryScores as masteryScores,
         lp.createdAt as createdAt,
         lp.updatedAt as updatedAt,
-        {
-          goal: lp.learningGoal,
-          difficultyLevel: lp.difficultyLevel,
-          totalDuration: lp.totalDuration,
-          steps: COLLECT(DISTINCT {
-            stepNumber: step.stepNumber,
-            title: step.title,
-            description: step.description,
-            estimatedDuration: step.estimatedDuration,
-            resources: step.resources,
-            prerequisites: step.prerequisites
-          })
-        } as learningPath
+        CASE 
+          WHEN lp.status = 'completed' THEN {
+            goal: lp.learningGoal,
+            difficultyLevel: lp.difficultyLevel,
+            totalDuration: lp.totalDuration,
+            steps: COLLECT(DISTINCT {
+              stepNumber: step.stepNumber,
+              title: step.title,
+              description: step.description,
+              estimatedDuration: step.estimatedDuration,
+              resources: step.resources,
+              prerequisites: step.prerequisites
+            })
+          }
+          ELSE null
+        END as learningPath
     `;
 
     try {
@@ -463,15 +535,32 @@ export class LearningPathService {
       }
 
       const record = result[0];
+      
+      // If status is processing, return a processing response
+      if (record.status === 'processing') {
+        return {
+          id: record.id,
+          userId,
+          learningGoal: record.learningGoal,
+          status: 'processing',
+          requestId: record.requestId,
+          learningPath: null,
+          createdAt: record.createdAt,
+          updatedAt: record.updatedAt,
+        } as any;
+      }
+
+      // Return completed learning path
       return {
         id: record.id,
         userId,
         learningGoal: record.learningGoal,
+        status: record.status || 'completed',
         learningPath: record.learningPath,
         masteryScores: record.masteryScores ? JSON.parse(record.masteryScores) : undefined,
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
-      };
+      } as any;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;

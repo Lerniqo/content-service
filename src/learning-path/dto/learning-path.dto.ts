@@ -86,11 +86,24 @@ export class GetLearningPathResponseDto {
   })
   learningGoal: string;
 
-  @ApiProperty({
-    description: 'Learning path details',
+  @ApiPropertyOptional({
+    description: 'Status of the learning path',
+    example: 'completed',
+    enum: ['processing', 'completed', 'failed'],
+  })
+  status?: string;
+
+  @ApiPropertyOptional({
+    description: 'Request ID for tracking (only present when status is processing)',
+    example: 'evt_abc123def',
+  })
+  requestId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Learning path details (null when processing)',
     type: LearningPathDetailsDto,
   })
-  learningPath: LearningPathDetailsDto;
+  learningPath: LearningPathDetailsDto | null;
 
   @ApiPropertyOptional({
     description: 'Mastery scores used for generating the path',
