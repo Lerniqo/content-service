@@ -67,7 +67,9 @@ export class LearningPathController {
     @Req() req: AuthenticatedRequest,
     @Body() dto: RequestLearningPathDto,
   ): Promise<LearningPathResponseDto> {
-    const userId = req.user.id;
+    const userIdFromHeader = req['headers']['x-user-id'];
+    const userId =
+      Array.isArray(userIdFromHeader) ? userIdFromHeader[0] : userIdFromHeader || req.user.id;
 
     LoggerUtil.logInfo(
       this.logger,
@@ -163,7 +165,8 @@ export class LearningPathController {
   async getLearningPathByUserId(
     @Req() req: AuthenticatedRequest,
   ): Promise<GetLearningPathResponseDto> {
-    const userId = req.user.id;
+    const userIdFromHeader = req['headers']['x-user-id'];
+    const userId = Array.isArray(userIdFromHeader) ? userIdFromHeader[0] : userIdFromHeader || req.user.id;
 
     LoggerUtil.logInfo(
       this.logger,
