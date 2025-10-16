@@ -543,8 +543,9 @@ export class LearningPathService {
     );
 
     const cypher = `
-      // Find the user
-      MATCH (u:User {id: $userId})
+      // Find the user - create if doesn't exist to avoid null results
+      MERGE (u:User {id: $userId})
+      ON CREATE SET u.createdAt = $timestamp
       
       // Find the user's learning path
       OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(lp:LearningPath)
@@ -564,7 +565,7 @@ export class LearningPathService {
         lp.createdAt as createdAt,
         lp.updatedAt as updatedAt,
         CASE 
-          WHEN lp.status = 'completed' THEN {
+          WHEN lp IS NOT NULL AND (lp.status = 'completed' OR lp.status IS NULL) THEN {
             goal: lp.learningGoal,
             difficultyLevel: lp.difficultyLevel,
             totalDuration: lp.totalDuration,
@@ -589,7 +590,12 @@ export class LearningPathService {
       timestamp,
     });
 
-    if (!result || result.length === 0 || !result[0].id) {
+    if (!result || result.length === 0) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Check if user has a learning path
+    if (!result[0].id) {
       throw new NotFoundException('Learning path not found');
     }
 

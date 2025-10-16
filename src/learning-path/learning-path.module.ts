@@ -6,11 +6,12 @@ import { LearningPathController } from './learning-path.controller';
 import { Neo4jModule } from '../common/neo4j/neo4j.module';
 import { KafkaModule } from '../common/kafka/kafka.module';
 import { LearningPathConsumer } from '../common/kafka/consumers/learning-path.consumer';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @Module({
   imports: [Neo4jModule, KafkaModule],
   controllers: [LearningPathController],
-  providers: [LearningPathService],
+  providers: [LearningPathService, RolesGuard],
   exports: [LearningPathService],
 })
 export class LearningPathModule implements OnModuleInit {

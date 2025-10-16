@@ -9,6 +9,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { LearningPathService } from './learning-path.service';
@@ -67,9 +68,14 @@ export class LearningPathController {
     @Req() req: AuthenticatedRequest,
     @Body() dto: RequestLearningPathDto,
   ): Promise<LearningPathResponseDto> {
-    const userIdFromHeader = req['headers']['x-user-id'];
-    const userId =
-      Array.isArray(userIdFromHeader) ? userIdFromHeader[0] : userIdFromHeader || req.user.id;
+    const userIdFromHeader = req['headers']['x-user-id'] as string | string[] | undefined;
+    const userId = Array.isArray(userIdFromHeader) 
+      ? userIdFromHeader[0] 
+      : userIdFromHeader || req.user?.id;
+
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
 
     LoggerUtil.logInfo(
       this.logger,
@@ -118,7 +124,11 @@ export class LearningPathController {
     @Req() req: AuthenticatedRequest,
     @Body() dto: CreateLearningPathDto,
   ): Promise<GetLearningPathResponseDto> {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
 
     LoggerUtil.logInfo(
       this.logger,
@@ -165,8 +175,14 @@ export class LearningPathController {
   async getLearningPathByUserId(
     @Req() req: AuthenticatedRequest,
   ): Promise<GetLearningPathResponseDto> {
-    const userIdFromHeader = req['headers']['x-user-id'];
-    const userId = Array.isArray(userIdFromHeader) ? userIdFromHeader[0] : userIdFromHeader || req.user.id;
+    const userIdFromHeader = req['headers']['x-user-id'] as string | string[] | undefined;
+    const userId = Array.isArray(userIdFromHeader) 
+      ? userIdFromHeader[0] 
+      : userIdFromHeader || req.user?.id;
+
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
 
     LoggerUtil.logInfo(
       this.logger,

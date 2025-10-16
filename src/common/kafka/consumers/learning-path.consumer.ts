@@ -180,9 +180,10 @@ export class LearningPathConsumer implements OnModuleInit {
         LoggerUtil.logError(
           this.logger,
           this.context,
-          'Learning path service not available',
-          {},
+          'Learning path service not available - skipping message processing',
+          { userId: responseMessage.eventData.user_id },
         );
+        // Don't throw error, just log and skip - service will process on retry
         return;
       }
 
