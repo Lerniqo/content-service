@@ -16,6 +16,7 @@ import { LearningPathService } from './learning-path.service';
 import { RequestLearningPathDto } from './dto/request-learning-path.dto';
 import { LearningPathResponseDto } from './dto/learning-path-response.dto';
 import { GetLearningPathResponseDto } from './dto/learning-path.dto';
+import { CreateLearningPathDto } from './dto/create-learning-path.dto';
 import { PinoLogger } from 'nestjs-pino';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
@@ -95,6 +96,59 @@ export class LearningPathController {
     return result;
   }
 
+  @Post('create')
+  @HttpCode(HttpStatus.CREATED)
+  @Roles('student', 'teacher', 'admin')
+  @ApiOperation({
+    summary: 'Create a new learning path',
+    description:
+      'Create a new learning path for a user. If the user already has a learning path, it will be replaced.',
+  })
+  @ApiHeader({
+    name: 'x-user-id',
+    description: 'User ID',
+    required: true,
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Learning path created successfully',
+    type: GetLearningPathResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid request data',
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Failed to create learning path',
+  })
+  async createLearningPath(
+    @Headers('x-user-id') userId: string,
+    @Body() dto: CreateLearningPathDto,
+  ): Promise<GetLearningPathResponseDto> {
+
+    LoggerUtil.logInfo(
+      this.logger,
+      'LearningPathController',
+      'Creating new learning path',
+      { userId, learningGoal: dto.learningGoal },
+    );
+
+    const result = await this.learningPathService.createLearningPath(
+      userId,
+      dto,
+    );
+
+    LoggerUtil.logInfo(
+      this.logger,
+      'LearningPathController',
+      'Learning path created successfully',
+      { userId, learningPathId: result.id },
+    );
+
+    return result;
+  }
+
   @Get()
   @HttpCode(HttpStatus.OK)
   @Roles('student', 'teacher', 'admin')
@@ -139,17 +193,12 @@ export class LearningPathController {
     return result;
   }
 
-  @Get(':id')
+  @Get('')
   @HttpCode(HttpStatus.OK)
   @Roles('student', 'teacher', 'admin')
   @ApiOperation({
-    summary: 'Get a specific learning path by ID',
-    description: 'Retrieve detailed information about a specific learning path',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Learning path ID',
-    example: 'lp_abc123def',
+    summary: 'Get user learning path',
+    description: 'Retrieve the learning path for the current user (one user can only have one learning path)',
   })
   @ApiHeader({
     name: 'x-user-id',
@@ -169,28 +218,26 @@ export class LearningPathController {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     description: 'Failed to fetch learning path',
   })
-  async getLearningPathById(
+  async getLearningPathByUserId(
     @Headers('x-user-id') userId: string,
-    @Param('id') learningPathId: string,
   ): Promise<GetLearningPathResponseDto> {
 
     LoggerUtil.logInfo(
       this.logger,
       'LearningPathController',
-      'Fetching learning path by ID',
-      { userId, learningPathId },
+      'Fetching learning path by user ID',
+      { userId },
     );
 
-    const result = await this.learningPathService.getLearningPathById(
+    const result = await this.learningPathService.getLearningPathByUserId(
       userId,
-      learningPathId,
     );
 
     LoggerUtil.logInfo(
       this.logger,
       'LearningPathController',
       'Learning path fetched successfully',
-      { userId, learningPathId },
+      { userId },
     );
 
     return result;
