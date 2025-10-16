@@ -18,14 +18,17 @@ import { LearningPathResponseDto } from './dto/learning-path-response.dto';
 import { GetLearningPathResponseDto } from './dto/learning-path.dto';
 import { CreateLearningPathDto } from './dto/create-learning-path.dto';
 
-interface LearningGoalEvent {
+interface LearningPathRequestEvent {
   eventId: string;
   eventType: string;
   eventData: {
-    learningGoal: string;
-    currentLevel: LearningLevel;
+    request_id: string;
+    user_id: string;
+    goal: string;
+    current_level: LearningLevel;
     preferences?: Record<string, any>;
-    availableTime?: string;
+    available_time?: string;
+    metadata?: Record<string, any>;
   };
   userId: string;
   metadata: {
@@ -96,14 +99,17 @@ export class LearningPathService {
       RETURN lp.id as learningPathId
     `;
 
-    const learningGoalEvent: LearningGoalEvent = {
+    const learningPathRequestEvent: LearningPathRequestEvent = {
       eventId,
-      eventType: 'LEARNING_GOAL',
+      eventType: 'learning_path.request',
       eventData: {
-        learningGoal: dto.learningGoal,
-        currentLevel: dto.currentLevel,
+        request_id: eventId,
+        user_id: userId,
+        goal: dto.learningGoal,
+        current_level: dto.currentLevel,
         preferences: dto.preferences,
-        availableTime: dto.availableTime || 'flexible',
+        available_time: dto.availableTime || 'flexible',
+        metadata: {},
       },
       userId,
       metadata: {
@@ -132,15 +138,15 @@ export class LearningPathService {
 
       // Publish event to Kafka for AI service to consume
       await this.kafkaService.sendMessage({
-        topic: 'learning_goal.request',
+        topic: 'learning_path.request',
         key: userId,
-        value: JSON.stringify(learningGoalEvent),
+        value: JSON.stringify(learningPathRequestEvent),
       });
 
       LoggerUtil.logInfo(
         this.logger,
         'LearningPathService',
-        'Learning goal event published to Kafka',
+        'Learning path request event published to Kafka',
         { eventId, userId },
       );
 
@@ -177,6 +183,16 @@ export class LearningPathService {
     );
 
     const timestamp = new Date().toISOString();
+
+    // Transform steps from snake_case to camelCase
+    const transformedSteps = learningPathData.learning_path.steps.map((step: any) => ({
+      stepNumber: step.step_number,
+      title: step.title,
+      description: step.description,
+      estimatedDuration: step.estimated_duration,
+      resources: step.resources || [],
+      prerequisites: step.prerequisites || [],
+    }));
 
     const cypher = `
       // Find the user and their existing learning path
@@ -223,7 +239,7 @@ export class LearningPathService {
       userId: learningPathData.user_id,
       difficultyLevel: learningPathData.learning_path.difficulty_level,
       totalDuration: learningPathData.learning_path.total_duration,
-      steps: learningPathData.learning_path.steps,
+      steps: transformedSteps,
       masteryScores: JSON.stringify(learningPathData.mastery_scores || {}),
       timestamp,
     };

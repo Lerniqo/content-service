@@ -9,12 +9,12 @@ import { KafkaService, MessageHandler } from '../kafka.service';
  * Interface for learning path step data
  */
 export interface LearningPathStep {
-  stepNumber: number;
+  step_number: number;
   title: string;
   description: string;
-  estimatedDuration: string;
+  estimated_duration: string;
   resources: string[];
-  prerequisites: number[];
+  prerequisites: string[];
 }
 
 /**
@@ -28,14 +28,29 @@ export interface LearningPathDetails {
 }
 
 /**
- * Interface for incoming learning path message
+ * Interface for learning path response event data
  */
-export interface LearningPathMessage {
+export interface LearningPathResponseEventData {
+  request_id: string;
+  status: string; // 'completed' or 'failed'
   user_id: string;
-  learning_goal: string;
-  learning_path: LearningPathDetails;
-  mastery_scores?: Record<string, any>;
-  available_resources?: any[];
+  goal?: string;
+  learning_path?: LearningPathDetails;
+  error?: string;
+  metadata?: Record<string, any>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/**
+ * Interface for incoming learning path response message
+ */
+export interface LearningPathResponseMessage {
+  eventId: string;
+  eventType: string; // 'learning_path.response'
+  eventData: LearningPathResponseEventData;
+  userId: string;
+  metadata?: Record<string, any>;
 }
 
 @Injectable()
@@ -59,7 +74,7 @@ export class LearningPathConsumer implements OnModuleInit {
       const messageHandler: MessageHandler =
         this.handleLearningPath.bind(this);
       await this.kafkaService.subscribe(
-        ['learning_path'],
+        ['learning_path.response'],
         {
           groupId: 'content-service-learning-path-group',
           sessionTimeout: 30000,
@@ -72,7 +87,7 @@ export class LearningPathConsumer implements OnModuleInit {
         this.logger,
         this.context,
         'Learning path consumer initialized successfully',
-        { topic: 'learning_path' },
+        { topic: 'learning_path.response' },
       );
     } catch (error) {
       LoggerUtil.logError(
@@ -109,22 +124,53 @@ export class LearningPathConsumer implements OnModuleInit {
     }
 
     try {
-      const learningPathData = JSON.parse(value) as LearningPathMessage;
+      const responseMessage = JSON.parse(value) as LearningPathResponseMessage;
 
       LoggerUtil.logInfo(
         this.logger,
         this.context,
-        'Processing learning path',
-        { userId: learningPathData.user_id },
+        'Processing learning path response',
+        { 
+          userId: responseMessage.eventData.user_id,
+          status: responseMessage.eventData.status,
+          requestId: responseMessage.eventData.request_id,
+        },
       );
 
       // Validate required fields
-      if (!learningPathData.user_id || !learningPathData.learning_path) {
+      if (!responseMessage.eventData || !responseMessage.eventData.user_id) {
         LoggerUtil.logError(
           this.logger,
           this.context,
-          'Invalid learning path data: missing required fields',
-          learningPathData,
+          'Invalid learning path response: missing required fields',
+          responseMessage,
+        );
+        return;
+      }
+
+      // Check if the response indicates failure
+      if (responseMessage.eventData.status === 'failed') {
+        LoggerUtil.logError(
+          this.logger,
+          this.context,
+          'Learning path generation failed',
+          {
+            userId: responseMessage.eventData.user_id,
+            error: responseMessage.eventData.error,
+            requestId: responseMessage.eventData.request_id,
+          },
+        );
+        // TODO: Update learning path status to 'failed' in database
+        return;
+      }
+
+      // Check if learning path data exists
+      if (!responseMessage.eventData.learning_path) {
+        LoggerUtil.logError(
+          this.logger,
+          this.context,
+          'Learning path response missing learning_path data',
+          responseMessage.eventData,
         );
         return;
       }
@@ -140,6 +186,15 @@ export class LearningPathConsumer implements OnModuleInit {
         return;
       }
 
+      // Transform the response to the format expected by saveLearningPath
+      const learningPathData = {
+        user_id: responseMessage.eventData.user_id,
+        learning_goal: responseMessage.eventData.goal,
+        learning_path: responseMessage.eventData.learning_path,
+        mastery_scores: responseMessage.eventData.metadata?.mastery_scores || {},
+        available_resources: responseMessage.eventData.metadata?.available_resources || [],
+      };
+
       // Save the learning path
       await this.learningPathService.saveLearningPath(learningPathData);
 
@@ -147,13 +202,16 @@ export class LearningPathConsumer implements OnModuleInit {
         this.logger,
         this.context,
         'Learning path processed successfully',
-        { userId: learningPathData.user_id },
+        { 
+          userId: responseMessage.eventData.user_id,
+          requestId: responseMessage.eventData.request_id,
+        },
       );
     } catch (error) {
       LoggerUtil.logError(
         this.logger,
         this.context,
-        'Failed to process learning path',
+        'Failed to process learning path response',
         error,
       );
       // Don't throw error to avoid infinite retry loop

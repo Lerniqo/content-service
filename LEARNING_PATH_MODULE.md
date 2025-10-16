@@ -14,11 +14,11 @@ The Learning Path module allows users to request personalized learning paths bas
 ## Architecture
 
 ```
-User Request → Content Service API → Kafka (learning_goal topic)
+User Request → Content Service API → Kafka (learning_path.request topic)
                     ↓
               Immediate Response
                     
-AI Service → Kafka (learning_path topic) → Content Service Consumer
+AI Service → Kafka (learning_path.response topic) → Content Service Consumer
                                                     ↓
                                               Neo4j Database
 ```
@@ -115,22 +115,25 @@ Retrieve a specific learning path by its ID.
 
 ### Published Topics
 
-#### `learning_goal`
+#### `learning_path.request`
 Published when a user requests a learning path.
 
 **Message Format:**
 ```json
 {
   "eventId": "evt_abc123def",
-  "eventType": "LEARNING_GOAL",
+  "eventType": "learning_path.request",
   "eventData": {
-    "learningGoal": "Learn Python programming",
-    "currentLevel": "beginner",
+    "request_id": "evt_abc123def",
+    "user_id": "user_789",
+    "goal": "Learn Python programming",
+    "current_level": "beginner",
     "preferences": {
       "format": "video",
       "topics": ["basics", "data structures"]
     },
-    "availableTime": "2 hours/day"
+    "available_time": "2 hours/day",
+    "metadata": {}
   },
   "userId": "user_789",
   "metadata": {
@@ -142,7 +145,7 @@ Published when a user requests a learning path.
 
 ### Consumed Topics
 
-#### `learning_path`
+#### `learning_path.response`
 Consumed when the AI service generates a learning path.
 
 **Consumer Group:** `content-service-learning-path-group`
@@ -150,25 +153,38 @@ Consumed when the AI service generates a learning path.
 **Message Format:**
 ```json
 {
-  "user_id": "user_789",
-  "learning_goal": "Learn Python programming",
-  "learning_path": {
+  "eventId": "evt_response_123",
+  "eventType": "learning_path.response",
+  "eventData": {
+    "request_id": "evt_abc123def",
+    "status": "completed",
+    "user_id": "user_789",
     "goal": "Learn Python programming",
-    "difficulty_level": "beginner",
-    "total_duration": "4 weeks",
-    "steps": [
-      {
-        "stepNumber": 1,
-        "title": "Python Basics",
-        "description": "Learn fundamental concepts",
-        "estimatedDuration": "1 week",
-        "resources": ["resource-001", "resource-002"],
-        "prerequisites": []
-      }
-    ]
+    "learning_path": {
+      "goal": "Learn Python programming",
+      "difficulty_level": "beginner",
+      "total_duration": "4 weeks",
+      "steps": [
+        {
+          "step_number": 1,
+          "title": "Python Basics",
+          "description": "Learn fundamental concepts",
+          "estimated_duration": "1 week",
+          "resources": ["resource-001", "resource-002"],
+          "prerequisites": []
+        }
+      ]
+    },
+    "metadata": {
+      "mastery_scores": {},
+      "available_resources": []
+    }
   },
-  "mastery_scores": {},
-  "available_resources": []
+  "userId": "ai-service",
+  "metadata": {
+    "source": "ai-service",
+    "request_id": "evt_abc123def"
+  }
 }
 ```
 
