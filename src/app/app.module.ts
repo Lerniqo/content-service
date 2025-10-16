@@ -69,7 +69,7 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(MockAuthMiddleware)
-      .exclude('syllabus', 'concepts/*path')
+      .exclude('', 'health', 'syllabus', 'concepts/*path')
       .forRoutes('*');
   }
 }
