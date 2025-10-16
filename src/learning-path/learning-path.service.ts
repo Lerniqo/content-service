@@ -440,15 +440,15 @@ export class LearningPathService {
       MERGE (u:User {id: $userId})
       ON CREATE SET u.createdAt = $timestamp
       
-      // Pass the user to the next part
       WITH u
       
-      // Try to find the learning path
       OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(lp:LearningPath)
       OPTIONAL MATCH (lp)-[:HAS_STEP]->(step:LearningPathStep)
       
-      WITH lp, 
-           COLLECT(step) as steps
+      WITH lp, step
+      ORDER BY step.stepNumber ASC
+
+      WITH lp, COLLECT(step) as steps
       ORDER BY lp.createdAt DESC
       
       RETURN 
@@ -464,13 +464,13 @@ export class LearningPathService {
             goal: lp.learningGoal,
             difficultyLevel: lp.difficultyLevel,
             totalDuration: lp.totalDuration,
-            steps: [step IN steps | {
-              stepNumber: step.stepNumber,
-              title: step.title,
-              description: step.description,
-              estimatedDuration: step.estimatedDuration,
-              resources: step.resources,
-              prerequisites: step.prerequisites
+            steps: [s IN steps WHERE s IS NOT NULL | {
+              stepNumber: s.stepNumber,
+              title: s.title,
+              description: s.description,
+              estimatedDuration: s.estimatedDuration,
+              resources: s.resources,
+              prerequisites: s.prerequisites
             }]
           }
           ELSE null
@@ -522,6 +522,7 @@ export class LearningPathService {
   /**
    * Get user's learning path (one user can only have one learning path)
    */
+  // ...existing code...
   async getLearningPathByUserId(
     userId: string,
   ): Promise<GetLearningPathResponseDto> {
@@ -537,12 +538,17 @@ export class LearningPathService {
       MERGE (u:User {id: $userId})
       ON CREATE SET u.createdAt = $timestamp
       
+      // Pass the user to the next part
+      WITH u
+      
       // Try to find the learning path
       OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(lp:LearningPath)
       OPTIONAL MATCH (lp)-[:HAS_STEP]->(step:LearningPathStep)
       
       WITH lp, step
       ORDER BY step.stepNumber
+      
+      WITH lp, COLLECT(step) as steps
       
       RETURN 
         lp.id as id,
@@ -553,73 +559,73 @@ export class LearningPathService {
         lp.createdAt as createdAt,
         lp.updatedAt as updatedAt,
         CASE 
-          WHEN lp.status = 'completed' THEN {
+          WHEN lp.status = 'completed' AND SIZE(steps) > 0 AND steps[0] IS NOT NULL THEN {
             goal: lp.learningGoal,
             difficultyLevel: lp.difficultyLevel,
             totalDuration: lp.totalDuration,
-            steps: COLLECT(DISTINCT {
+            steps: [step IN steps WHERE step IS NOT NULL | {
               stepNumber: step.stepNumber,
               title: step.title,
               description: step.description,
               estimatedDuration: step.estimatedDuration,
               resources: step.resources,
               prerequisites: step.prerequisites
-            })
+            }]
           }
           ELSE null
         END as learningPath
-    `;
+  `;
 
-    const timestamp = new Date().toISOString();
+  const timestamp = new Date().toISOString();
 
-    try {
-      const result = await this.neo4jService.read(cypher, {
-        userId,
-        timestamp,
-      });
+  try {
+    const result = await this.neo4jService.read(cypher, {
+      userId,
+      timestamp,
+    });
 
-      if (!result || result.length === 0 || !result[0].id) {
-        throw new NotFoundException('Learning path not found');
-      }
+    if (!result || result.length === 0 || !result[0].id) {
+      throw new NotFoundException('Learning path not found');
+    }
 
-      const record = result[0];
-      
-      // If status is processing, return a processing response
-      if (record.status === 'processing') {
-        return {
-          id: record.id,
-          userId,
-          learningGoal: record.learningGoal,
-          status: 'processing',
-          requestId: record.requestId,
-          learningPath: null,
-          createdAt: record.createdAt,
-          updatedAt: record.updatedAt,
-        } as any;
-      }
-
-      // Return completed learning path
+    const record = result[0];
+    
+    // If status is processing, return a processing response
+    if (record.status === 'processing') {
       return {
         id: record.id,
         userId,
         learningGoal: record.learningGoal,
-        status: record.status || 'completed',
-        learningPath: record.learningPath,
-        masteryScores: record.masteryScores ? JSON.parse(record.masteryScores) : undefined,
+        status: 'processing',
+        requestId: record.requestId,
+        learningPath: null,
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
       } as any;
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      LoggerUtil.logError(
-        this.logger,
-        'LearningPathService',
-        'Failed to fetch learning path',
-        error,
-      );
-      throw new InternalServerErrorException('Failed to fetch learning path');
     }
+
+    // Return completed learning path
+    return {
+      id: record.id,
+      userId,
+      learningGoal: record.learningGoal,
+      status: record.status || 'completed',
+      learningPath: record.learningPath,
+      masteryScores: record.masteryScores ? JSON.parse(record.masteryScores) : undefined,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+    } as any;
+  } catch (error) {
+    if (error instanceof NotFoundException) {
+      throw error;
+    }
+    LoggerUtil.logError(
+      this.logger,
+      'LearningPathService',
+      'Failed to fetch learning path',
+      error,
+    );
+    throw new InternalServerErrorException('Failed to fetch learning path');
   }
+}
 }
