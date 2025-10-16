@@ -53,10 +53,8 @@ export class LearningPathController {
     @Req() req: Request,
     @Body() dto: RequestLearningPathDto,
   ): Promise<LearningPathResponseDto> {
-    const userIdFromHeader = req['headers']['x-user-id'] as string | string[] | undefined;
-    const userId = Array.isArray(userIdFromHeader) 
-      ? userIdFromHeader[0] 
-      : userIdFromHeader;
+    const userId = req.headers['x-user-id'] as string;
+    const userRole = req.headers['x-user-role'] as string;
 
     if (!userId) {
       throw new BadRequestException('User ID is required in x-user-id header');
@@ -66,7 +64,7 @@ export class LearningPathController {
       this.logger,
       'LearningPathController',
       'Request learning path generation',
-      { userId, learningGoal: dto.learningGoal },
+      { userId, userRole, learningGoal: dto.learningGoal },
     );
 
     const result = await this.learningPathService.requestLearningPath(
@@ -108,10 +106,8 @@ export class LearningPathController {
     @Req() req: Request,
     @Body() dto: CreateLearningPathDto,
   ): Promise<GetLearningPathResponseDto> {
-    const userIdFromHeader = req['headers']['x-user-id'] as string | string[] | undefined;
-    const userId = Array.isArray(userIdFromHeader) 
-      ? userIdFromHeader[0] 
-      : userIdFromHeader;
+    const userId = req.headers['x-user-id'] as string;
+    const userRole = req.headers['x-user-role'] as string;
 
     if (!userId) {
       throw new BadRequestException('User ID is required in x-user-id header');
@@ -121,7 +117,7 @@ export class LearningPathController {
       this.logger,
       'LearningPathController',
       'Creating new learning path',
-      { userId, learningGoal: dto.learningGoal },
+      { userId, userRole, learningGoal: dto.learningGoal },
     );
 
     const result = await this.learningPathService.createLearningPath(
@@ -161,10 +157,8 @@ export class LearningPathController {
   async getLearningPathByUserId(
     @Req() req: Request,
   ): Promise<GetLearningPathResponseDto> {
-    const userIdFromHeader = req['headers']['x-user-id'] as string | string[] | undefined;
-    const userId = Array.isArray(userIdFromHeader) 
-      ? userIdFromHeader[0] 
-      : userIdFromHeader;
+    const userId = req.headers['x-user-id'] as string;
+    const userRole = req.headers['x-user-role'] as string;
 
     if (!userId) {
       throw new BadRequestException('User ID is required in x-user-id header');
@@ -174,7 +168,7 @@ export class LearningPathController {
       this.logger,
       'LearningPathController',
       'Fetching learning path by user ID',
-      { userId },
+      { userId, userRole },
     );
 
     const result = await this.learningPathService.getLearningPathByUserId(
