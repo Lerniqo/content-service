@@ -185,6 +185,7 @@ export class LearningPathService {
     const timestamp = new Date().toISOString();
 
     // Transform steps from snake_case to camelCase
+    // Note: AI service returns resource names/descriptions, not IDs
     const transformedSteps = learningPathData.learning_path.steps.map((step: any) => ({
       stepNumber: step.step_number,
       title: step.title,
