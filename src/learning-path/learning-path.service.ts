@@ -531,7 +531,6 @@ export class LearningPathService {
   /**
    * Get user's learning path (one user can only have one learning path)
    */
-  // ...existing code...
   async getLearningPathByUserId(
     userId: string,
   ): Promise<GetLearningPathResponseDto> {
@@ -542,101 +541,117 @@ export class LearningPathService {
       { userId },
     );
 
+    // Simplified Cypher query that doesn't create users in GET request
     const cypher = `
-      // Find the user - create if doesn't exist to avoid null results
-      MERGE (u:User {id: $userId})
-      ON CREATE SET u.createdAt = $timestamp
-      
-      // Find the user's learning path
+      MATCH (u:User {id: $userId})
       OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(lp:LearningPath)
       OPTIONAL MATCH (lp)-[:HAS_STEP]->(step:LearningPathStep)
       
-      WITH lp, step
+      WITH u, lp, step
       ORDER BY step.stepNumber ASC
       
-      WITH lp, COLLECT(step) as steps
+      WITH u, lp, COLLECT(step) as steps
       
       RETURN 
-        lp.id as id,
+        u.id as userId,
+        lp.id as learningPathId,
         lp.learningGoal as learningGoal,
         lp.status as status,
         lp.requestId as requestId,
         lp.masteryScores as masteryScores,
         lp.createdAt as createdAt,
         lp.updatedAt as updatedAt,
+        lp.difficultyLevel as difficultyLevel,
+        lp.totalDuration as totalDuration,
         CASE 
-          WHEN lp IS NOT NULL AND (lp.status = 'completed' OR lp.status IS NULL) THEN {
-            goal: lp.learningGoal,
-            difficultyLevel: lp.difficultyLevel,
-            totalDuration: lp.totalDuration,
-            steps: [s IN steps WHERE s IS NOT NULL | {
+          WHEN lp IS NOT NULL AND size(steps) > 0 THEN
+            [s IN steps WHERE s IS NOT NULL | {
               stepNumber: s.stepNumber,
               title: s.title,
               description: s.description,
               estimatedDuration: s.estimatedDuration,
-              resources: s.resources,
-              prerequisites: s.prerequisites
+              resources: CASE WHEN s.resources IS NOT NULL THEN s.resources ELSE [] END,
+              prerequisites: CASE WHEN s.prerequisites IS NOT NULL THEN s.prerequisites ELSE [] END
             }]
-          }
-          ELSE null
-        END as learningPath
+          ELSE []
+        END as steps
     `;
 
-  const timestamp = new Date().toISOString();
+    try {
+      const result = await this.neo4jService.read(cypher, { userId });
 
-  try {
-    const result = await this.neo4jService.read(cypher, {
-      userId,
-      timestamp,
-    });
+      if (!result || result.length === 0) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
 
-    if (!result || result.length === 0) {
-      throw new NotFoundException('User not found');
-    }
+      const record = result[0];
 
-    // Check if user has a learning path
-    if (!result[0].id) {
-      throw new NotFoundException('Learning path not found');
-    }
+      // Check if user has a learning path
+      if (!record.learningPathId) {
+        throw new NotFoundException('Learning path not found for this user');
+      }
 
-    const record = result[0];
-    
-    // If status is processing, return a processing response
-    if (record.status === 'processing') {
-      return {
-        id: record.id,
-        userId,
+      // Build the response object
+      const response: GetLearningPathResponseDto = {
+        id: record.learningPathId,
+        userId: record.userId,
         learningGoal: record.learningGoal,
-        status: 'processing',
-        requestId: record.requestId,
-        learningPath: null,
+        status: record.status || 'completed',
+        learningPath: null, // Will be set below based on status
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
-      } as any;
-    }
+      };
 
-    // Return completed learning path
-    return {
-      id: record.id,
-      userId,
-      learningGoal: record.learningGoal,
-      status: record.status || 'completed',
-      learningPath: record.learningPath,
-      masteryScores: record.masteryScores ? JSON.parse(record.masteryScores) : undefined,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-    } as any;
-  } catch (error) {
-    if (error instanceof NotFoundException) {
-      throw error;
+      // Add optional fields
+      if (record.requestId) {
+        response.requestId = record.requestId;
+      }
+
+      if (record.masteryScores) {
+        try {
+          response.masteryScores = JSON.parse(record.masteryScores);
+        } catch (parseError) {
+          LoggerUtil.logError(
+            this.logger,
+            'LearningPathService',
+            'Failed to parse masteryScores',
+            parseError,
+          );
+        }
+      }
+
+      // Handle learning path details based on status
+      if (record.status === 'processing') {
+        response.learningPath = null;
+      } else {
+        // Build learning path details for completed/ready paths
+        response.learningPath = {
+          goal: record.learningGoal,
+          difficultyLevel: record.difficultyLevel || 'beginner',
+          totalDuration: record.totalDuration || '0 hours',
+          steps: record.steps || [],
+        };
+      }
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'LearningPathService',
+        'Successfully retrieved learning path',
+        { userId, learningPathId: record.learningPathId, status: record.status },
+      );
+
+      return response;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      LoggerUtil.logError(
+        this.logger,
+        'LearningPathService',
+        'Failed to fetch learning path',
+        error,
+      );
+      throw new InternalServerErrorException('Failed to fetch learning path');
     }
-    LoggerUtil.logError(
-      this.logger,
-      'LearningPathService',
-      'Failed to fetch learning path',
-      error,
-    );
-    throw new InternalServerErrorException('Failed to fetch learning path');
   }
-}
 }
