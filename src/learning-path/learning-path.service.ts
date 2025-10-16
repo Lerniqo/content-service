@@ -440,12 +440,16 @@ export class LearningPathService {
       MERGE (u:User {id: $userId})
       ON CREATE SET u.createdAt = $timestamp
       
-      // Try to find learning paths
+      // Pass the user to the next part
+      WITH u
+      
+      // Try to find the learning path
       OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(lp:LearningPath)
       OPTIONAL MATCH (lp)-[:HAS_STEP]->(step:LearningPathStep)
       
-      WITH lp, step
-      ORDER BY step.stepNumber
+      WITH lp, 
+           COLLECT(step) as steps
+      ORDER BY lp.createdAt DESC
       
       RETURN 
         lp.id as id,
@@ -460,18 +464,17 @@ export class LearningPathService {
             goal: lp.learningGoal,
             difficultyLevel: lp.difficultyLevel,
             totalDuration: lp.totalDuration,
-            steps: COLLECT(DISTINCT {
+            steps: [step IN steps | {
               stepNumber: step.stepNumber,
               title: step.title,
               description: step.description,
               estimatedDuration: step.estimatedDuration,
               resources: step.resources,
               prerequisites: step.prerequisites
-            })
+            }]
           }
           ELSE null
         END as learningPath
-      ORDER BY lp.createdAt DESC
     `;
 
     try {
