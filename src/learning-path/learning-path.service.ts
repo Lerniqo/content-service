@@ -224,14 +224,8 @@ export class LearningPathService {
       })
       CREATE (lp)-[:HAS_STEP]->(s)
       
-      // Connect steps with resources if they exist
-      WITH s
-      UNWIND s.resources AS resourceId
-      OPTIONAL MATCH (r:Resource {id: resourceId})
-      FOREACH (_ IN CASE WHEN r IS NOT NULL THEN [1] ELSE [] END |
-        CREATE (s)-[:USES_RESOURCE]->(r)
-      )
-      
+      // Return the updated learning path
+      WITH lp
       RETURN lp.id as learningPathId
     `;
 
@@ -328,16 +322,8 @@ export class LearningPathService {
       })
       CREATE (lp)-[:HAS_STEP]->(s)
       
-      // Connect steps with resources if they exist
-      WITH s
-      UNWIND s.resources AS resourceId
-      OPTIONAL MATCH (r:Resource {id: resourceId})
-      FOREACH (_ IN CASE WHEN r IS NOT NULL THEN [1] ELSE [] END |
-        CREATE (s)-[:USES_RESOURCE]->(r)
-      )
-      
-      WITH s
-      MATCH (lp:LearningPath {id: $learningPathId})
+      // Return the created learning path and steps
+      WITH lp
       OPTIONAL MATCH (lp)-[:HAS_STEP]->(step:LearningPathStep)
       
       WITH lp, step

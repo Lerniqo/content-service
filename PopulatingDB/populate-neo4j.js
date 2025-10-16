@@ -30,6 +30,41 @@ async function populateDatabase() {
       "CREATE INDEX resource_resourceId IF NOT EXISTS FOR (r:Resource) ON (r.resourceId)"
     );
 
+    // Create indexes and constraints for User nodes
+    await session.run(
+      "CREATE CONSTRAINT user_id_unique IF NOT EXISTS FOR (u:User) REQUIRE u.id IS UNIQUE"
+    );
+    await session.run(
+      "CREATE INDEX user_id IF NOT EXISTS FOR (u:User) ON (u.id)"
+    );
+
+    // Create indexes and constraints for LearningPath nodes
+    await session.run(
+      "CREATE CONSTRAINT learningpath_id_unique IF NOT EXISTS FOR (lp:LearningPath) REQUIRE lp.id IS UNIQUE"
+    );
+    await session.run(
+      "CREATE INDEX learningpath_id IF NOT EXISTS FOR (lp:LearningPath) ON (lp.id)"
+    );
+    await session.run(
+      "CREATE INDEX learningpath_status IF NOT EXISTS FOR (lp:LearningPath) ON (lp.status)"
+    );
+    await session.run(
+      "CREATE INDEX learningpath_difficultyLevel IF NOT EXISTS FOR (lp:LearningPath) ON (lp.difficultyLevel)"
+    );
+
+    // Create indexes for LearningPathStep nodes
+    await session.run(
+      "CREATE CONSTRAINT learningstep_id_unique IF NOT EXISTS FOR (s:LearningPathStep) REQUIRE s.id IS UNIQUE"
+    );
+    await session.run(
+      "CREATE INDEX learningstep_id IF NOT EXISTS FOR (s:LearningPathStep) ON (s.id)"
+    );
+    await session.run(
+      "CREATE INDEX learningstep_stepNumber IF NOT EXISTS FOR (s:LearningPathStep) ON (s.stepNumber)"
+    );
+
+    console.log("✅ Created indexes and constraints for Learning Path nodes");
+
     // Clear existing data
     await session.run("MATCH (n) DETACH DELETE n");
 
