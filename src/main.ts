@@ -29,7 +29,6 @@ async function bootstrap() {
       'Accept',
       'x-user-id',
       'x-user-roles',
-      'x-user-name',
     ],
     credentials: true, // Enable if you need to send cookies/auth headers
   });

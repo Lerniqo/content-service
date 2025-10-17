@@ -19,6 +19,14 @@ import { PinoLogger } from 'nestjs-pino';
 import type { Request } from 'express';
 import { LoggerUtil } from '../common/utils/logger.util';
 
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    role: string[];
+    [key: string]: any;
+  };
+}
+
 @ApiTags('learning-path')
 @Controller('learning-path')
 export class LearningPathController {
@@ -50,11 +58,11 @@ export class LearningPathController {
     description: 'Failed to initiate learning path generation',
   })
   async requestLearningPath(
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Body() dto: RequestLearningPathDto,
   ): Promise<LearningPathResponseDto> {
-    const userId = req.headers['x-user-id'] as string;
-    const userRole = req.headers['x-user-role'] as string;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
 
     if (!userId) {
       throw new BadRequestException('User ID is required in x-user-id header');
@@ -103,11 +111,11 @@ export class LearningPathController {
     description: 'Failed to create learning path',
   })
   async createLearningPath(
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Body() dto: CreateLearningPathDto,
   ): Promise<GetLearningPathResponseDto> {
-    const userId = req.headers['x-user-id'] as string;
-    const userRole = req.headers['x-user-role'] as string;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
 
     if (!userId) {
       throw new BadRequestException('User ID is required in x-user-id header');
@@ -155,10 +163,10 @@ export class LearningPathController {
     description: 'Failed to fetch learning path',
   })
   async getLearningPathByUserId(
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
   ): Promise<GetLearningPathResponseDto> {
-    const userId = req.headers['x-user-id'] as string;
-    const userRole = req.headers['x-user-role'] as string;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
 
     if (!userId) {
       throw new BadRequestException('User ID is required in x-user-id header');

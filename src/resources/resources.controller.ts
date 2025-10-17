@@ -4,6 +4,7 @@ import {
   Post,
   Put,
   Delete,
+  Get,
   Param,
   Req,
   UseGuards,
@@ -19,6 +20,7 @@ import { ResourcesService } from './resources.service';
 import { PinoLogger } from 'nestjs-pino';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { Request } from 'express';
 import { LoggerUtil } from '../common/utils/logger.util';
 
@@ -198,6 +200,137 @@ export class ResourcesController {
           conceptId: createResourceDto.conceptId,
           userId,
         },
+      );
+      throw error;
+    }
+  }
+
+  @Get(':id')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get a resource by ID',
+    description:
+      'Retrieves a specific resource by its ID. This endpoint is public and does not require authentication.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Resource retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        resourceId: {
+          type: 'string',
+          format: 'uuid',
+          example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        },
+        name: {
+          type: 'string',
+          example: 'Fractions Video',
+        },
+        type: {
+          type: 'string',
+          example: 'video',
+        },
+        description: {
+          type: 'string',
+          example: 'A comprehensive video explaining fraction operations',
+        },
+        url: {
+          type: 'string',
+          format: 'url',
+          example: 'https://example.com/resources/fractions',
+        },
+        isPublic: {
+          type: 'boolean',
+          example: true,
+        },
+        price: {
+          type: 'number',
+          example: 9.99,
+        },
+        tags: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['mathematics', 'fractions'],
+        },
+        gradeLevel: {
+          type: 'string',
+          example: 'Grade 6',
+        },
+        subject: {
+          type: 'string',
+          example: 'Mathematics',
+        },
+        publishedBy: {
+          type: 'string',
+          example: 'user-123',
+        },
+        createdAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:30:00Z',
+        },
+        updatedAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:30:00Z',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Resource with specified ID not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: {
+          type: 'string',
+          example:
+            'Resource with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 not found',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - Database or server error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Internal server error' },
+      },
+    },
+  })
+  async getById(@Param('id') resourceId: string): Promise<Record<string, any>> {
+    LoggerUtil.logInfo(
+      this.logger,
+      'ResourcesController',
+      'Fetching resource by ID',
+      { resourceId },
+    );
+
+    try {
+      const result = await this.resourcesService.fetchResourceById(resourceId);
+
+      LoggerUtil.logInfo(
+        this.logger,
+        'ResourcesController',
+        'Resource fetched successfully',
+        { resourceId, name: (result.name as string | undefined) || '' },
+      );
+
+      return result;
+    } catch (error) {
+      LoggerUtil.logError(
+        this.logger,
+        'ResourcesController',
+        'Failed to fetch resource',
+        error,
+        { resourceId },
       );
       throw error;
     }

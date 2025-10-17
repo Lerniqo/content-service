@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Injectable, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 import { EachMessagePayload } from 'kafkajs';
 import { LoggerUtil } from '../../utils/logger.util';

@@ -15,6 +15,7 @@ import { SyllabusModule } from '../syllabus/syllabus.module';
 import { ConceptsModule } from '../concepts/concepts.module';
 import { LearningPathModule } from '../learning-path/learning-path.module';
 import { ContestsModule } from '../contests/contests.module';
+import { AuthMiddleware } from '../common/middleware/auth.middleware';
 
 @Module({
     imports: [
@@ -67,7 +68,7 @@ import { ContestsModule } from '../contests/contests.module';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply()
+      .apply(AuthMiddleware)
       .exclude('syllabus', 'concepts/*path')
       .forRoutes('*');
   }

@@ -6,6 +6,7 @@ import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Unauthor
 import { Reflector } from '@nestjs/core';
 import { PinoLogger } from 'nestjs-pino';
 import { LoggerUtil } from '../../common/utils/logger.util';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -17,6 +18,21 @@ export class RolesGuard implements CanActivate {
   }
 
   canActivate(context: ExecutionContext): boolean {
+    // Check if the endpoint is marked as public
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (isPublic) {
+      LoggerUtil.logDebug(
+        this.logger,
+        'RolesGuard',
+        'Public endpoint - skipping authentication',
+      );
+      return true;
+    }
+
     // Get required roles from the @Roles() decorator
     const requiredRoles = this.reflector.get<string[]>('roles', context.getHandler());
     

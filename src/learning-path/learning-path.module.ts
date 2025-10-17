@@ -16,7 +16,7 @@ import { LearningPathConsumer } from '../common/kafka/consumers/learning-path.co
 export class LearningPathModule implements OnModuleInit {
   constructor(private readonly moduleRef: ModuleRef) {}
 
-  async onModuleInit(): Promise<void> {
+  onModuleInit(): void {
     // Get instances from the module
     const learningPathService = this.moduleRef.get(LearningPathService, {
       strict: false,
@@ -26,6 +26,8 @@ export class LearningPathModule implements OnModuleInit {
     });
 
     // Set the service in the consumer to avoid circular dependency
-    learningPathConsumer.setLearningPathService(learningPathService);
+    if (learningPathConsumer) {
+      learningPathConsumer.setLearningPathService(learningPathService);
+    }
   }
 }

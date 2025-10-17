@@ -335,7 +335,9 @@ describe('ContestsService', () => {
         updatedAt: '2025-10-01T10:00:00Z',
       };
 
-      jest.spyOn(service, 'getContestById').mockResolvedValue(mockExistingContest);
+      jest
+        .spyOn(service, 'getContestById')
+        .mockResolvedValue(mockExistingContest);
 
       mockNeo4jService.write.mockResolvedValue({
         records: [{ get: () => 'contest-123' }],
