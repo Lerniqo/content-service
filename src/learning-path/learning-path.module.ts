@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { Module, OnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { LearningPathService } from './learning-path.service';

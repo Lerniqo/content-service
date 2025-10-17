@@ -209,19 +209,12 @@ export class LearningPathService {
       // Find or create the user
       MERGE (u:User {id: $userId})
       ON CREATE SET u.createdAt = $timestamp
-      
-      WITH u
-      // Delete existing learning path if any
+
+      // Delete existing learning path and all its steps if any exist
       OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(oldLp:LearningPath)
-      WITH u, oldLp
-      WHERE oldLp IS NOT NULL
-      CALL {
-        WITH oldLp
-        OPTIONAL MATCH (oldLp)-[:HAS_STEP]->(s)
-        DETACH DELETE s, oldLp
-      }
-      
-      WITH u
+      OPTIONAL MATCH (oldLp)-[:HAS_STEP]->(oldStep:LearningPathStep)
+      DETACH DELETE oldStep, oldLp
+
       // Create new learning path node with generated data
       CREATE (lp:LearningPath {
         id: $learningPathId,
@@ -233,10 +226,10 @@ export class LearningPathService {
         createdAt: $timestamp,
         updatedAt: $timestamp
       })
-      
+
       // Create relationship between user and learning path
       CREATE (u)-[:HAS_LEARNING_PATH]->(lp)
-      
+
       // Create learning path steps
       WITH lp
       UNWIND $steps AS step
@@ -250,9 +243,8 @@ export class LearningPathService {
         prerequisites: step.prerequisites
       })
       CREATE (lp)-[:HAS_STEP]->(s)
-      
-      WITH lp
-      // Return the created/updated learning path
+
+      // Return the created learning path
       RETURN lp.id as learningPathId
     `;
 
