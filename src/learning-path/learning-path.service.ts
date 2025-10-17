@@ -210,6 +210,7 @@ export class LearningPathService {
       MERGE (u:User {id: $userId})
       ON CREATE SET u.createdAt = $timestamp
 
+      WITH u
       // Delete existing learning path and all its steps if any exist
       OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(oldLp:LearningPath)
       OPTIONAL MATCH (oldLp)-[:HAS_STEP]->(oldStep:LearningPathStep)
