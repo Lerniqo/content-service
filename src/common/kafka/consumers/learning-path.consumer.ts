@@ -56,7 +56,7 @@ export interface LearningPathResponseMessage {
 @Injectable()
 export class LearningPathConsumer implements OnModuleInit {
   private readonly context = 'LearningPathConsumer';
-  private learningPathService: any;
+  private learningPathService: { saveLearningPath: (data: unknown) => Promise<void> } | null = null;
 
   constructor(
     private readonly kafkaService: KafkaService,
@@ -65,8 +65,8 @@ export class LearningPathConsumer implements OnModuleInit {
   ) {}
 
   // Method to set the learning path service (to avoid circular dependency)
-  setLearningPathService(service: any): void {
-    this.learningPathService = service;
+  setLearningPathService(service: unknown): void {
+    this.learningPathService = service as typeof this.learningPathService;
   }
 
   async onModuleInit(): Promise<void> {
@@ -197,7 +197,9 @@ export class LearningPathConsumer implements OnModuleInit {
       };
 
       // Save the learning path
-      await this.learningPathService.saveLearningPath(learningPathData);
+      if (this.learningPathService) {
+        await this.learningPathService.saveLearningPath(learningPathData);
+      }
 
       LoggerUtil.logInfo(
         this.logger,

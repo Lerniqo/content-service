@@ -1,13 +1,12 @@
-version: '3.8'
 
 services:
   content-service:
     build: .
     ports:
-      - "3000:3000"
+      - "4001:4001"
     environment:
       - NODE_ENV=production
-      - PORT=${PORT:-3000}
+      - PORT=${PORT:-4001}
       - NEO4J_URI=${NEO4J_URI}
       - NEO4J_USERNAME=${NEO4J_USERNAME}
       - NEO4J_PASSWORD=${NEO4J_PASSWORD}

@@ -137,7 +137,7 @@ describe('ContestsService', () => {
       const mockRecords = [
         {
           get: (key: string) => {
-            const data: any = {
+            const data: Record<string, unknown> = {
               contestId: 'contest-1',
               contestName: 'Contest 1',
               subTitle: 'Subtitle 1',
@@ -191,7 +191,7 @@ describe('ContestsService', () => {
       const mockRecords = [
         {
           get: (key: string) => {
-            const data: any = {
+            const data: Record<string, unknown> = {
               contestId: 'contest-123',
               contestName: 'Test Contest',
               subTitle: 'Test Subtitle',
@@ -245,7 +245,7 @@ describe('ContestsService', () => {
       const mockRecords = [
         {
           get: (key: string) => {
-            const data: any = {
+            const data: Record<string, unknown> = {
               contestId: 'contest-no-tasks',
               contestName: 'Empty Contest',
               subTitle: null,
@@ -285,7 +285,7 @@ describe('ContestsService', () => {
       const mockRecords = [
         {
           get: (key: string) => {
-            const data: any = {
+            const data: Record<string, unknown> = {
               contestId: 'future-contest',
               contestName: 'Future Contest',
               subTitle: 'Coming soon',
@@ -344,7 +344,7 @@ describe('ContestsService', () => {
       });
 
       // Act
-      const result = await service.updateContest(contestId, updateDto);
+      await service.updateContest(contestId, updateDto);
 
       // Assert
       expect(service.getContestById).toHaveBeenCalledWith(contestId);
