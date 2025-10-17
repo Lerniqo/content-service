@@ -46,7 +46,7 @@ export class QuizzesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles('teacher', 'admin')
+  @Roles('Teacher', 'Admin')
   @ApiOperation({
     summary: 'Create a new quiz',
     description:
@@ -230,7 +230,7 @@ export class QuizzesController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @Roles('student', 'teacher', 'admin')
+  @Roles('Student', 'Teacher', 'Admin')
   @ApiOperation({
     summary: 'Get all quizzes',
     description:
@@ -386,7 +386,7 @@ export class QuizzesController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles('student', 'teacher', 'admin') // All authenticated users can access quizzes
+  @Roles('Student', 'Teacher', 'Admin') // All authenticated users can access quizzes
   @ApiOperation({
     summary: 'Get quiz by ID',
     description:
@@ -568,7 +568,7 @@ export class QuizzesController {
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles('teacher', 'admin')
+  @Roles('Teacher', 'Admin')
   @ApiOperation({
     summary: 'Update a quiz',
     description:
@@ -701,7 +701,7 @@ export class QuizzesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles('teacher', 'admin')
+  @Roles('Teacher', 'Admin')
   @ApiOperation({
     summary: 'Delete a quiz',
     description:
@@ -805,7 +805,7 @@ export class QuizzesController {
 
   @Get('concept/:conceptId')
   @HttpCode(HttpStatus.OK)
-  @Roles('student', 'teacher', 'admin') // All authenticated users can access quizzes
+  @Roles('Student', 'Teacher', 'Admin') // All authenticated users can access quizzes
   @ApiOperation({
     summary: 'Get quizzes by Concept ID',
     description:
