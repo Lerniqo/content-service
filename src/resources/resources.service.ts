@@ -5,6 +5,7 @@ import {
   InternalServerErrorException,
   ForbiddenException,
 } from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
 import { PinoLogger } from 'nestjs-pino';
 import { Neo4jService } from '../common/neo4j/neo4j.service';
 import { CreateResourceDto } from './dto/create-resource.dto';
@@ -25,7 +26,8 @@ export class ResourcesService {
     createResourceDto: CreateResourceDto,
     userId: string,
   ): Promise<CreateResourceResponseDto> {
-    const resourceId = createResourceDto.resourceId;
+    // Generate UUID if not provided
+    const resourceId = createResourceDto.resourceId || uuidv4();
     
     LoggerUtil.logInfo(
       this.logger,
@@ -68,7 +70,7 @@ export class ResourcesService {
         { resourceId, userId },
       );
 
-      return new CreateResourceResponseDto(resourceId, uploadUrl);
+      return new CreateResourceResponseDto(resourceId, createResourceDto.url, uploadUrl);
     } catch (error) {
       LoggerUtil.logError(
         this.logger,
@@ -142,7 +144,7 @@ export class ResourcesService {
     `;
 
     const params = {
-      resourceId: createResourceDto.resourceId,
+      resourceId: resourceId,
       name: createResourceDto.name,
       type: createResourceDto.type,
       description: createResourceDto.description || null,
@@ -191,7 +193,7 @@ export class ResourcesService {
     const query = `
       MATCH (c:SyllabusConcept {conceptId: $conceptId})
       MATCH (r:Resource {resourceId: $resourceId})
-      CREATE (c)-[:EXPLAINS]->(r)
+      CREATE (r)-[:EXPLAINS]->(c)
       RETURN r.resourceId as resourceId
     `;
 
@@ -343,6 +345,16 @@ export class ResourcesService {
       );
       throw new InternalServerErrorException('Failed to fetch resource');
     }
+  }
+
+  public async fetchResourceById(resourceId: string): Promise<Record<string, any>> {
+    const resource = await this.getResourceById(resourceId);
+    
+    if (!resource) {
+      throw new NotFoundException(`Resource with ID ${resourceId} not found`);
+    }
+    
+    return resource;
   }
 
   private async canUpdateResource(

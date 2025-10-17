@@ -4,7 +4,6 @@ import {
   NotFoundException,
   InternalServerErrorException,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
 import { Neo4jService } from '../common/neo4j/neo4j.service';
@@ -160,18 +159,18 @@ export class ContestsService {
         ORDER BY c.startDate DESC
       `;
 
-      const result = await this.neo4jService.read(query);
+      const result = (await this.neo4jService.read(query)) as Array<Record<string, any>>;
 
-      return result.records.map((record) => {
+      return result.map((record) => {
         const contestData: ContestQueryResult = {
-          contestId: record.get('contestId'),
-          contestName: record.get('contestName'),
-          subTitle: record.get('subTitle'),
-          startDate: record.get('startDate'),
-          endDate: record.get('endDate'),
-          createdAt: record.get('createdAt'),
-          updatedAt: record.get('updatedAt'),
-          tasks: record.get('tasks'),
+          contestId: record.contestId as string,
+          contestName: record.contestName as string,
+          subTitle: record.subTitle as string | null,
+          startDate: record.startDate as string,
+          endDate: record.endDate as string,
+          createdAt: record.createdAt as string | null,
+          updatedAt: record.updatedAt as string | null,
+          tasks: record.tasks as TaskData[],
         };
 
         return this.mapToContestResponse(contestData);
@@ -219,22 +218,22 @@ export class ContestsService {
                }] AS tasks
       `;
 
-      const result = await this.neo4jService.read(query, { contestId });
+      const result = (await this.neo4jService.read(query, { contestId })) as Array<Record<string, any>>;
 
-      if (result.records.length === 0) {
+      if (result.length === 0) {
         throw new NotFoundException(`Contest with ID ${contestId} not found`);
       }
 
-      const record = result.records[0];
+      const record = result[0];
       const contestData: ContestQueryResult = {
-        contestId: record.get('contestId'),
-        contestName: record.get('contestName'),
-        subTitle: record.get('subTitle'),
-        startDate: record.get('startDate'),
-        endDate: record.get('endDate'),
-        createdAt: record.get('createdAt'),
-        updatedAt: record.get('updatedAt'),
-        tasks: record.get('tasks'),
+        contestId: record.contestId as string,
+        contestName: record.contestName as string,
+        subTitle: record.subTitle as string | null,
+        startDate: record.startDate as string,
+        endDate: record.endDate as string,
+        createdAt: record.createdAt as string | null,
+        updatedAt: record.updatedAt as string | null,
+        tasks: record.tasks as TaskData[],
       };
 
       return this.mapToContestResponse(contestData);
@@ -288,18 +287,18 @@ export class ContestsService {
         ORDER BY c.startDate ASC
       `;
 
-      const result = await this.neo4jService.read(query, { now });
+      const result = (await this.neo4jService.read(query, { now })) as Array<Record<string, any>>;
 
-      return result.records.map((record) => {
+      return result.map((record) => {
         const contestData: ContestQueryResult = {
-          contestId: record.get('contestId'),
-          contestName: record.get('contestName'),
-          subTitle: record.get('subTitle'),
-          startDate: record.get('startDate'),
-          endDate: record.get('endDate'),
-          createdAt: record.get('createdAt'),
-          updatedAt: record.get('updatedAt'),
-          tasks: record.get('tasks'),
+          contestId: record.contestId as string,
+          contestName: record.contestName as string,
+          subTitle: record.subTitle as string | null,
+          startDate: record.startDate as string,
+          endDate: record.endDate as string,
+          createdAt: record.createdAt as string | null,
+          updatedAt: record.updatedAt as string | null,
+          tasks: record.tasks as TaskData[],
         };
 
         return this.mapToContestResponse(contestData);
@@ -364,7 +363,7 @@ export class ContestsService {
 
       // Build the SET clause dynamically based on provided fields
       const setFields: string[] = ['c.updatedAt = $updatedAt'];
-      const parameters: any = { contestId, updatedAt: now };
+      const parameters: Record<string, any> = { contestId, updatedAt: now };
 
       if (updateContestDto.contestName !== undefined) {
         setFields.push('c.contestName = $contestName');
@@ -408,7 +407,7 @@ export class ContestsService {
           })
           CREATE (c)-[:HAS_TASK]->(t)
         `;
-        parameters.tasks = updateContestDto.tasks;
+        parameters.tasks = (updateContestDto.tasks as unknown) || null;
       }
 
       query += ' RETURN c.contestId AS contestId';
@@ -458,9 +457,9 @@ export class ContestsService {
         RETURN count(c) AS deletedCount
       `;
 
-      const result = await this.neo4jService.write(query, { contestId });
+      const result = (await this.neo4jService.write(query, { contestId })) as Array<Record<string, any>>;
 
-      const deletedCount = result.records[0]?.get('deletedCount')?.toNumber() || 0;
+      const deletedCount = (result[0]?.deletedCount as { toNumber: () => number } | null)?.toNumber?.() || 0;
 
       if (deletedCount === 0) {
         throw new NotFoundException(`Contest with ID ${contestId} not found`);

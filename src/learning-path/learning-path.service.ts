@@ -181,12 +181,13 @@ export class LearningPathService {
   /**
    * Save learning path received from AI service (called by Kafka consumer)
    */
-  async saveLearningPath(learningPathData: any): Promise<void> {
+  async saveLearningPath(learningPathData: Record<string, any>): Promise<void> {
+    const userId = learningPathData.user_id as string | undefined;
     LoggerUtil.logInfo(
       this.logger,
       'LearningPathService',
       'Saving learning path from AI service',
-      { userId: learningPathData.user_id },
+      { userId },
     );
 
     const timestamp = new Date().toISOString();
@@ -194,13 +195,14 @@ export class LearningPathService {
 
     // Transform steps from snake_case to camelCase
     // Note: AI service returns resource names/descriptions, not IDs
-    const transformedSteps = learningPathData.learning_path.steps.map((step: any) => ({
-      stepNumber: step.step_number,
-      title: step.title,
-      description: step.description,
-      estimatedDuration: step.estimated_duration,
-      resources: step.resources || [],
-      prerequisites: step.prerequisites || [],
+    const stepsArray = (learningPathData.learning_path as Record<string, any>).steps as Array<Record<string, any>>;
+    const transformedSteps: Array<Record<string, any>> = stepsArray.map((step) => ({
+      stepNumber: step.step_number as number,
+      title: step.title as string,
+      description: step.description as string,
+      estimatedDuration: step.estimated_duration as string,
+      resources: (step.resources as string[] | undefined) || [],
+      prerequisites: (step.prerequisites as string[] | undefined) || [],
     }));
 
     const cypher = `
@@ -255,25 +257,25 @@ export class LearningPathService {
     `;
 
     const params = {
-      userId: learningPathData.user_id,
+      userId: learningPathData.user_id as string,
       learningPathId,
-      learningGoal: learningPathData.learning_path.goal || learningPathData.goal || 'Learning Path',
-      difficultyLevel: learningPathData.learning_path.difficulty_level,
-      totalDuration: learningPathData.learning_path.total_duration,
+      learningGoal: ((learningPathData.learning_path as Record<string, any>).goal || learningPathData.goal || 'Learning Path') as string,
+      difficultyLevel: (learningPathData.learning_path as Record<string, any>).difficulty_level as string,
+      totalDuration: (learningPathData.learning_path as Record<string, any>).total_duration as string,
       steps: transformedSteps,
-      masteryScores: JSON.stringify(learningPathData.mastery_scores || {}),
+      masteryScores: JSON.stringify((learningPathData.mastery_scores as Record<string, any> | undefined) || {}),
       timestamp,
     };
 
     try {
-      const result = await this.neo4jService.write(cypher, params);
+      const result = (await this.neo4jService.write(cypher, params)) as Array<Record<string, any>>;
 
       if (!result || result.length === 0) {
         LoggerUtil.logError(
           this.logger,
           'LearningPathService',
           'Failed to create/update learning path - no result returned',
-          { userId: learningPathData.user_id },
+          { userId },
         );
         throw new InternalServerErrorException('Failed to save learning path');
       }
@@ -282,7 +284,7 @@ export class LearningPathService {
         this.logger,
         'LearningPathService',
         'Learning path saved successfully',
-        { learningPathId: result[0].learningPathId, userId: learningPathData.user_id },
+        { learningPathId: (result[0].learningPathId as string) || '', userId },
       );
     } catch (error) {
       LoggerUtil.logError(
@@ -395,7 +397,7 @@ export class LearningPathService {
     };
 
     try {
-      const result = await this.neo4jService.write(cypher, params);
+      const result = (await this.neo4jService.write(cypher, params)) as Array<Record<string, any>>;
 
       if (!result || result.length === 0) {
         throw new InternalServerErrorException('Failed to create learning path');
@@ -410,13 +412,22 @@ export class LearningPathService {
         { learningPathId, userId },
       );
 
+      const learningPathData = record.learningPath as Record<string, any> | null;
+      const lp: any = learningPathData ? {
+        goal: (learningPathData.goal as string) || '',
+        difficultyLevel: (learningPathData.difficultyLevel as string) || 'beginner',
+        totalDuration: (learningPathData.totalDuration as string) || '0',
+        steps: (learningPathData.steps as Array<Record<string, any>>) || [],
+      } : null;
+      
       return {
-        id: record.id,
+        id: record.id as string,
         userId,
-        learningGoal: record.learningGoal,
-        learningPath: record.learningPath,
-        createdAt: record.createdAt,
-        updatedAt: record.updatedAt,
+        learningGoal: record.learningGoal as string,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        learningPath: lp,
+        createdAt: record.createdAt as string,
+        updatedAt: record.updatedAt as string,
       };
     } catch (error) {
       LoggerUtil.logError(
@@ -487,36 +498,41 @@ export class LearningPathService {
     `;
 
     try {
-      const result = await this.neo4jService.read(cypher, { userId, timestamp });
+      const result = (await this.neo4jService.read(cypher, { userId, timestamp })) as Array<Record<string, any>>;
 
       // Filter out null results (when user has no learning path)
-      return result
-        .filter((record: any) => record.id !== null)
-        .map((record: any) => {
-          if (record.status === 'processing') {
+      const responses: any[] = result
+        .filter((record) => (record.id as string | null) !== null)
+        .map((record) => {
+          if ((record.status as string | undefined) === 'processing') {
             return {
-              id: record.id,
+              id: record.id as string,
               userId,
-              learningGoal: record.learningGoal,
+              learningGoal: record.learningGoal as string,
               status: 'processing',
-              requestId: record.requestId,
+              requestId: record.requestId as string | undefined,
               learningPath: null,
-              createdAt: record.createdAt,
-              updatedAt: record.updatedAt,
-            } as any;
+              createdAt: record.createdAt as string,
+              updatedAt: record.updatedAt as string,
+            };
           }
 
+          const masteryScoresStr = record.masteryScores as string | undefined;
           return {
-            id: record.id,
+            id: record.id as string,
             userId,
-            learningGoal: record.learningGoal,
-            status: record.status || 'completed',
+            learningGoal: record.learningGoal as string,
+            status: (record.status as string | undefined) || 'completed',
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             learningPath: record.learningPath,
-            masteryScores: record.masteryScores ? JSON.parse(record.masteryScores) : undefined,
-            createdAt: record.createdAt,
-            updatedAt: record.updatedAt,
-          } as any;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            masteryScores: masteryScoresStr ? JSON.parse(masteryScoresStr) : undefined,
+            createdAt: record.createdAt as string,
+            updatedAt: record.updatedAt as string,
+          };
         });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return responses;
     } catch (error) {
       LoggerUtil.logError(
         this.logger,
@@ -578,7 +594,7 @@ export class LearningPathService {
     `;
 
     try {
-      const result = await this.neo4jService.read(cypher, { userId });
+      const result = (await this.neo4jService.read(cypher, { userId })) as Array<Record<string, any>>;
 
       if (!result || result.length === 0) {
         throw new NotFoundException(`User with ID ${userId} not found`);
@@ -587,29 +603,30 @@ export class LearningPathService {
       const record = result[0];
 
       // Check if user has a learning path
-      if (!record.learningPathId) {
+      if (!(record.learningPathId as string | null)) {
         throw new NotFoundException('Learning path not found for this user');
       }
 
       // Build the response object
       const response: GetLearningPathResponseDto = {
-        id: record.learningPathId,
-        userId: record.userId,
-        learningGoal: record.learningGoal,
-        status: record.status || 'completed',
+        id: record.learningPathId as string,
+        userId: record.userId as string,
+        learningGoal: record.learningGoal as string,
+        status: ((record.status as string | undefined) || 'completed'),
         learningPath: null, // Will be set below based on status
-        createdAt: record.createdAt,
-        updatedAt: record.updatedAt,
+        createdAt: record.createdAt as string,
+        updatedAt: record.updatedAt as string,
       };
 
       // Add optional fields
-      if (record.requestId) {
-        response.requestId = record.requestId;
+      if (record.requestId as string | undefined) {
+        response.requestId = record.requestId as string;
       }
 
-      if (record.masteryScores) {
+      if (record.masteryScores as string | undefined) {
         try {
-          response.masteryScores = JSON.parse(record.masteryScores);
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          response.masteryScores = JSON.parse(record.masteryScores as string);
         } catch (parseError) {
           LoggerUtil.logError(
             this.logger,
@@ -621,15 +638,18 @@ export class LearningPathService {
       }
 
       // Handle learning path details based on status
-      if (record.status === 'processing') {
+      if ((record.status as string | undefined) === 'processing') {
         response.learningPath = null;
       } else {
         // Build learning path details for completed/ready paths
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const recordSteps = record.steps;
         response.learningPath = {
-          goal: record.learningGoal,
-          difficultyLevel: record.difficultyLevel || 'beginner',
-          totalDuration: record.totalDuration || '0 hours',
-          steps: record.steps || [],
+          goal: record.learningGoal as string,
+          difficultyLevel: (record.difficultyLevel as string | undefined) || 'beginner',
+          totalDuration: (record.totalDuration as string | undefined) || '0 hours',
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          steps: recordSteps || [],
         };
       }
 
@@ -637,7 +657,7 @@ export class LearningPathService {
         this.logger,
         'LearningPathService',
         'Successfully retrieved learning path',
-        { userId, learningPathId: record.learningPathId, status: record.status },
+        { userId, learningPathId: record.learningPathId as string, status: record.status as string },
       );
 
       return response;

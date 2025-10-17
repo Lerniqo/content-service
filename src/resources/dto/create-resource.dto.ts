@@ -18,13 +18,14 @@ import { RESOURCE_TYPES } from '../../libs/shared-types';
 import type { ResourceType } from '../../libs/shared-types';
 
 export class CreateResourceDto {
-  @ApiProperty({
-    description: 'Unique identifier for the resource (resourceId in database)',
+  @ApiPropertyOptional({
+    description:
+      'Unique identifier for the resource (auto-generated if not provided)',
     example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
   })
-  @IsUUID()
-  @IsNotEmpty({ message: 'Resource ID is required' })
-  resourceId: string;
+  @IsOptional()
+  @IsUUID('4', { message: 'resourceId must be a valid UUID v4' })
+  resourceId?: string;
 
   @ApiProperty({
     description: 'Name of the resource',

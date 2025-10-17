@@ -51,7 +51,7 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
         'Failed to connect producer',
         error,
       );
-      
+
       // In development mode, just log the error instead of throwing
       if (process.env.NODE_ENV === 'development') {
         LoggerUtil.logInfo(

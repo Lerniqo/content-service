@@ -85,7 +85,10 @@ describe('ContestsController', () => {
       mockContestsService.createContest.mockResolvedValue(expectedResult);
 
       // Act
-      const result = await controller.createContest(createDto, mockRequest as any);
+      const result = await controller.createContest(
+        createDto,
+        mockRequest as any,
+      );
 
       // Assert
       expect(result).toEqual(expectedResult);
@@ -130,7 +133,9 @@ describe('ContestsController', () => {
         },
       ];
 
-      mockContestsService.getAvailableContests.mockResolvedValue(expectedResult);
+      mockContestsService.getAvailableContests.mockResolvedValue(
+        expectedResult,
+      );
 
       // Act
       const result = await controller.getAvailableContests(mockRequest as any);
@@ -156,7 +161,10 @@ describe('ContestsController', () => {
       mockContestsService.getContestById.mockResolvedValue(expectedResult);
 
       // Act
-      const result = await controller.getContestById(contestId, mockRequest as any);
+      const result = await controller.getContestById(
+        contestId,
+        mockRequest as any,
+      );
 
       // Assert
       expect(result).toEqual(expectedResult);
@@ -176,7 +184,10 @@ describe('ContestsController', () => {
       mockContestsService.canParticipate.mockResolvedValue(expectedResult);
 
       // Act
-      const result = await controller.canParticipate(contestId, mockRequest as any);
+      const result = await controller.canParticipate(
+        contestId,
+        mockRequest as any,
+      );
 
       // Assert
       expect(result).toEqual(expectedResult);
@@ -226,7 +237,10 @@ describe('ContestsController', () => {
       mockContestsService.deleteContest.mockResolvedValue(expectedResult);
 
       // Act
-      const result = await controller.deleteContest(contestId, mockRequest as any);
+      const result = await controller.deleteContest(
+        contestId,
+        mockRequest as any,
+      );
 
       // Assert
       expect(result).toEqual(expectedResult);
