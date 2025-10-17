@@ -56,7 +56,9 @@ export interface LearningPathResponseMessage {
 @Injectable()
 export class LearningPathConsumer implements OnModuleInit {
   private readonly context = 'LearningPathConsumer';
-  private learningPathService: { saveLearningPath: (data: unknown) => Promise<void> } | null = null;
+  private learningPathService: {
+    saveLearningPath: (data: unknown) => Promise<void>;
+  } | null = null;
 
   constructor(
     private readonly kafkaService: KafkaService,
@@ -71,8 +73,7 @@ export class LearningPathConsumer implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     try {
-      const messageHandler: MessageHandler =
-        this.handleLearningPath.bind(this);
+      const messageHandler: MessageHandler = this.handleLearningPath.bind(this);
       await this.kafkaService.subscribe(
         ['learning_path.response'],
         {
@@ -104,22 +105,16 @@ export class LearningPathConsumer implements OnModuleInit {
     const { topic, partition, message } = payload;
     const value = message.value?.toString();
 
-      LoggerUtil.logInfo(
-        this.logger,
-        this.context,
-        'Message received',
-        {
-          topic,
-          partition,
-          offset: message.offset,
-        },
-      );    if (!value) {
-      LoggerUtil.logWarn(
-        this.logger,
-        this.context,
-        'Empty message received',
-        { topic, partition },
-      );
+    LoggerUtil.logInfo(this.logger, this.context, 'Message received', {
+      topic,
+      partition,
+      offset: message.offset,
+    });
+    if (!value) {
+      LoggerUtil.logWarn(this.logger, this.context, 'Empty message received', {
+        topic,
+        partition,
+      });
       return;
     }
 
@@ -130,7 +125,7 @@ export class LearningPathConsumer implements OnModuleInit {
         this.logger,
         this.context,
         'Processing learning path response',
-        { 
+        {
           userId: responseMessage.eventData.user_id,
           status: responseMessage.eventData.status,
           requestId: responseMessage.eventData.request_id,
@@ -192,8 +187,10 @@ export class LearningPathConsumer implements OnModuleInit {
         user_id: responseMessage.eventData.user_id,
         learning_goal: responseMessage.eventData.goal,
         learning_path: responseMessage.eventData.learning_path,
-        mastery_scores: responseMessage.eventData.metadata?.mastery_scores || {},
-        available_resources: responseMessage.eventData.metadata?.available_resources || [],
+        mastery_scores:
+          responseMessage.eventData.metadata?.mastery_scores || {},
+        available_resources:
+          responseMessage.eventData.metadata?.available_resources || [],
       };
 
       // Save the learning path
@@ -205,7 +202,7 @@ export class LearningPathConsumer implements OnModuleInit {
         this.logger,
         this.context,
         'Learning path processed successfully',
-        { 
+        {
           userId: responseMessage.eventData.user_id,
           requestId: responseMessage.eventData.request_id,
         },
