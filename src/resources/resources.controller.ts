@@ -46,7 +46,7 @@ export class ResourcesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles('teacher', 'admin')
+  @Roles('Teacher', 'Admin')
   @ApiOperation({
     summary: 'Create a new resource',
     description:
@@ -338,7 +338,7 @@ export class ResourcesController {
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles('teacher', 'admin')
+  @Roles('Teacher', 'Admin')
   @ApiOperation({
     summary: 'Update an existing resource',
     description:
@@ -561,7 +561,7 @@ export class ResourcesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles('teacher', 'admin')
+  @Roles('Teacher', 'Admin')
   @ApiOperation({
     summary: 'Delete an existing resource',
     description:
