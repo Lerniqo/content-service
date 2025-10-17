@@ -19,8 +19,6 @@ import { CreateQuizResponseDto } from './dto/create-quiz-response.dto';
 import { QuizResponseDto } from './dto/quiz-response.dto';
 import { QuizzesService } from './quizzes.service';
 import { PinoLogger } from 'nestjs-pino';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/roles/roles.decorator';
 import { Request } from 'express';
 import { LoggerUtil } from '../common/utils/logger.util';
 
@@ -35,7 +33,6 @@ interface AuthenticatedRequest extends Request {
 
 @ApiTags('quizzes')
 @Controller('quizzes')
-@UseGuards(RolesGuard)
 export class QuizzesController {
   constructor(
     private readonly quizzesService: QuizzesService,
@@ -46,7 +43,6 @@ export class QuizzesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles('Teacher', 'Admin')
   @ApiOperation({
     summary: 'Create a new quiz',
     description:
@@ -106,14 +102,18 @@ export class QuizzesController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad Request - Invalid input data, validation errors, or questions not found',
+    description:
+      'Bad Request - Invalid input data, validation errors, or questions not found',
     schema: {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 400 },
         message: {
           oneOf: [
-            { type: 'string', example: 'Questions not found: question-001, question-002' },
+            {
+              type: 'string',
+              example: 'Questions not found: question-001, question-002',
+            },
             {
               type: 'array',
               items: { type: 'string' },
@@ -182,22 +182,20 @@ export class QuizzesController {
   ): Promise<CreateQuizResponseDto> {
     const userId = req.user.id;
 
-    LoggerUtil.logInfo(
-      this.logger,
-      'QuizzesController',
-      'Creating new quiz',
-      {
-        title: createQuizDto.title,
-        conceptId: createQuizDto.conceptId,
-        questionCount: createQuizDto.questionIds.length,
-        timeLimit: createQuizDto.timeLimit,
-        userId,
-        hasDescription: !!createQuizDto.description,
-      },
-    );
+    LoggerUtil.logInfo(this.logger, 'QuizzesController', 'Creating new quiz', {
+      title: createQuizDto.title,
+      conceptId: createQuizDto.conceptId,
+      questionCount: createQuizDto.questionIds.length,
+      timeLimit: createQuizDto.timeLimit,
+      userId,
+      hasDescription: !!createQuizDto.description,
+    });
 
     try {
-      const result = await this.quizzesService.createQuiz(createQuizDto, userId);
+      const result = await this.quizzesService.createQuiz(
+        createQuizDto,
+        userId,
+      );
 
       LoggerUtil.logInfo(
         this.logger,
@@ -230,7 +228,6 @@ export class QuizzesController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @Roles('Student', 'Teacher', 'Admin')
   @ApiOperation({
     summary: 'Get all quizzes',
     description:
@@ -258,7 +255,8 @@ export class QuizzesController {
           },
           description: {
             type: 'string',
-            example: 'A comprehensive quiz covering basic mathematical concepts',
+            example:
+              'A comprehensive quiz covering basic mathematical concepts',
             description: 'Description of the quiz',
           },
           timeLimit: {
@@ -386,7 +384,6 @@ export class QuizzesController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles('Student', 'Teacher', 'Admin') // All authenticated users can access quizzes
   @ApiOperation({
     summary: 'Get quiz by ID',
     description:
@@ -568,7 +565,6 @@ export class QuizzesController {
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles('Teacher', 'Admin')
   @ApiOperation({
     summary: 'Update a quiz',
     description:
@@ -658,19 +654,18 @@ export class QuizzesController {
   ): Promise<QuizResponseDto> {
     const userId = req.user.id;
 
-    LoggerUtil.logInfo(
-      this.logger,
-      'QuizzesController',
-      'Updating quiz',
-      {
-        quizId,
-        userId,
-        updates: Object.keys(updateQuizDto),
-      },
-    );
+    LoggerUtil.logInfo(this.logger, 'QuizzesController', 'Updating quiz', {
+      quizId,
+      userId,
+      updates: Object.keys(updateQuizDto),
+    });
 
     try {
-      const result = await this.quizzesService.updateQuiz(quizId, updateQuizDto, userId);
+      const result = await this.quizzesService.updateQuiz(
+        quizId,
+        updateQuizDto,
+        userId,
+      );
 
       LoggerUtil.logInfo(
         this.logger,
@@ -701,7 +696,6 @@ export class QuizzesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles('Teacher', 'Admin')
   @ApiOperation({
     summary: 'Delete a quiz',
     description:
@@ -765,15 +759,10 @@ export class QuizzesController {
   ): Promise<void> {
     const userId = req.user.id;
 
-    LoggerUtil.logInfo(
-      this.logger,
-      'QuizzesController',
-      'Deleting quiz',
-      {
-        quizId,
-        userId,
-      },
-    );
+    LoggerUtil.logInfo(this.logger, 'QuizzesController', 'Deleting quiz', {
+      quizId,
+      userId,
+    });
 
     try {
       await this.quizzesService.deleteQuiz(quizId, userId);
@@ -802,10 +791,8 @@ export class QuizzesController {
     }
   }
 
-
   @Get('concept/:conceptId')
   @HttpCode(HttpStatus.OK)
-  @Roles('Student', 'Teacher', 'Admin') // All authenticated users can access quizzes
   @ApiOperation({
     summary: 'Get quizzes by Concept ID',
     description:
@@ -861,7 +848,7 @@ export class QuizzesController {
       properties: {
         statusCode: { type: 'number', example: 500 },
         message: { type: 'string', example: 'Internal server error' },
-        error: { type: 'string', example: 'Internal Server Error' }, 
+        error: { type: 'string', example: 'Internal Server Error' },
       },
     },
   })
@@ -899,7 +886,7 @@ export class QuizzesController {
         'QuizzesController',
         'Failed to retrieve quizzes by concept',
         error,
-        { conceptId, userId },  
+        { conceptId, userId },
       );
       throw error;
     }

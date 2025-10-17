@@ -12,15 +12,19 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+} from '@nestjs/swagger';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { CreateQuestionResponseDto } from './dto/create-question-response.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionResponseDto } from './dto/question-response.dto';
 import { QuestionsService } from './questions.service';
 import { PinoLogger } from 'nestjs-pino';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/roles/roles.decorator';
 import { LoggerUtil } from '../common/utils/logger.util';
 import { Request } from 'express';
 
@@ -35,7 +39,6 @@ interface AuthenticatedRequest extends Request {
 
 @ApiTags('questions')
 @Controller('questions')
-@UseGuards(RolesGuard)
 export class QuestionsController {
   constructor(
     private readonly questionsService: QuestionsService,
@@ -46,7 +49,6 @@ export class QuestionsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles('admin', 'teacher', 'student')
   @ApiOperation({
     summary: 'Create a new question',
     description:
@@ -169,7 +171,10 @@ export class QuestionsController {
     );
 
     try {
-      const result = await this.questionsService.createQuestion(createQuestionDto, userId);
+      const result = await this.questionsService.createQuestion(
+        createQuestionDto,
+        userId,
+      );
 
       LoggerUtil.logInfo(
         this.logger,
@@ -275,7 +280,8 @@ export class QuestionsController {
         statusCode: { type: 'number', example: 404 },
         message: {
           type: 'string',
-          example: 'Question with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 not found',
+          example:
+            'Question with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 not found',
         },
         error: { type: 'string', example: 'Not Found' },
       },
@@ -325,7 +331,6 @@ export class QuestionsController {
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles('admin')
   @ApiOperation({
     summary: 'Update a question',
     description:
@@ -358,9 +363,7 @@ export class QuestionsController {
             {
               type: 'array',
               items: { type: 'string' },
-              example: [
-                'Correct answer must be one of the provided options',
-              ],
+              example: ['Correct answer must be one of the provided options'],
             },
           ],
         },
@@ -399,7 +402,8 @@ export class QuestionsController {
         statusCode: { type: 'number', example: 404 },
         message: {
           type: 'string',
-          example: 'Question with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 not found',
+          example:
+            'Question with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 not found',
         },
         error: { type: 'string', example: 'Not Found' },
       },
@@ -435,7 +439,10 @@ export class QuestionsController {
     );
 
     try {
-      const result = await this.questionsService.updateQuestion(id, updateQuestionDto);
+      const result = await this.questionsService.updateQuestion(
+        id,
+        updateQuestionDto,
+      );
 
       LoggerUtil.logInfo(
         this.logger,
@@ -459,7 +466,6 @@ export class QuestionsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles('admin')
   @ApiOperation({
     summary: 'Delete a question',
     description:
@@ -478,7 +484,8 @@ export class QuestionsController {
       properties: {
         message: {
           type: 'string',
-          example: 'Question with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 deleted successfully',
+          example:
+            'Question with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 deleted successfully',
         },
       },
     },
@@ -514,7 +521,8 @@ export class QuestionsController {
         statusCode: { type: 'number', example: 404 },
         message: {
           type: 'string',
-          example: 'Question with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 not found',
+          example:
+            'Question with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 not found',
         },
         error: { type: 'string', example: 'Not Found' },
       },
@@ -667,7 +675,8 @@ export class QuestionsController {
     );
 
     try {
-      const result = await this.questionsService.getQuestionsByTeacherId(teacherId);
+      const result =
+        await this.questionsService.getQuestionsByTeacherId(teacherId);
 
       LoggerUtil.logInfo(
         this.logger,

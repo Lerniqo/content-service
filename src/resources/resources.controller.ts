@@ -18,8 +18,6 @@ import { UpdateResourceDto } from './dto/update-resource.dto';
 import { DeleteResourceResponseDto } from './dto/delete-resource-response.dto';
 import { ResourcesService } from './resources.service';
 import { PinoLogger } from 'nestjs-pino';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/roles/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { Request } from 'express';
 import { LoggerUtil } from '../common/utils/logger.util';
@@ -35,7 +33,6 @@ interface AuthenticatedRequest extends Request {
 
 @ApiTags('resources')
 @Controller('resources')
-@UseGuards(RolesGuard)
 export class ResourcesController {
   constructor(
     private readonly resourcesService: ResourcesService,
@@ -46,7 +43,6 @@ export class ResourcesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles('Teacher', 'Admin')
   @ApiOperation({
     summary: 'Create a new resource',
     description:
@@ -338,7 +334,6 @@ export class ResourcesController {
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles('Teacher', 'Admin')
   @ApiOperation({
     summary: 'Update an existing resource',
     description:
@@ -561,7 +556,6 @@ export class ResourcesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles('Teacher', 'Admin')
   @ApiOperation({
     summary: 'Delete an existing resource',
     description:
