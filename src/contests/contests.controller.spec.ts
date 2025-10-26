@@ -1,12 +1,21 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { Request } from 'express';
 import { ContestsController } from './contests.controller';
 import { ContestsService } from './contests.service';
 import { PinoLogger } from 'nestjs-pino';
 import { CreateContestDto } from './dto/create-contest.dto';
 import { UpdateContestDto } from './dto/update-contest.dto';
 import { TaskType } from './dto/create-task.dto';
+
+interface AuthenticatedRequest extends Request {
+  user: {
+    id: string;
+    role: string[];
+    [key: string]: unknown;
+  };
+}
 
 describe('ContestsController', () => {
   let controller: ContestsController;
@@ -30,7 +39,7 @@ describe('ContestsController', () => {
     debug: jest.fn(),
   };
 
-  const mockRequest = {
+  const mockRequest: Partial<AuthenticatedRequest> = {
     user: {
       id: 'user-123',
       role: ['teacher'],
@@ -87,7 +96,7 @@ describe('ContestsController', () => {
       // Act
       const result = await controller.createContest(
         createDto,
-        mockRequest as any,
+        mockRequest as AuthenticatedRequest,
       );
 
       // Assert
@@ -112,7 +121,9 @@ describe('ContestsController', () => {
       mockContestsService.getAllContests.mockResolvedValue(expectedResult);
 
       // Act
-      const result = await controller.getAllContests(mockRequest as any);
+      const result = await controller.getAllContests(
+        mockRequest as AuthenticatedRequest,
+      );
 
       // Assert
       expect(result).toEqual(expectedResult);
@@ -138,7 +149,9 @@ describe('ContestsController', () => {
       );
 
       // Act
-      const result = await controller.getAvailableContests(mockRequest as any);
+      const result = await controller.getAvailableContests(
+        mockRequest as AuthenticatedRequest,
+      );
 
       // Assert
       expect(result).toEqual(expectedResult);
@@ -163,7 +176,7 @@ describe('ContestsController', () => {
       // Act
       const result = await controller.getContestById(
         contestId,
-        mockRequest as any,
+        mockRequest as AuthenticatedRequest,
       );
 
       // Assert
@@ -186,7 +199,7 @@ describe('ContestsController', () => {
       // Act
       const result = await controller.canParticipate(
         contestId,
-        mockRequest as any,
+        mockRequest as AuthenticatedRequest,
       );
 
       // Assert
@@ -217,7 +230,7 @@ describe('ContestsController', () => {
       const result = await controller.updateContest(
         contestId,
         updateDto,
-        mockRequest as any,
+        mockRequest as AuthenticatedRequest,
       );
 
       // Assert
@@ -239,7 +252,7 @@ describe('ContestsController', () => {
       // Act
       const result = await controller.deleteContest(
         contestId,
-        mockRequest as any,
+        mockRequest as AuthenticatedRequest,
       );
 
       // Assert

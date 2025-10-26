@@ -51,6 +51,10 @@ describe('ContestsService', () => {
 
     // Clear mocks before each test
     jest.clearAllMocks();
+
+    // Reset mock implementations
+    mockNeo4jService.read.mockReset();
+    mockNeo4jService.write.mockReset();
   });
 
   describe('createContest', () => {
@@ -136,31 +140,26 @@ describe('ContestsService', () => {
       // Arrange
       const mockRecords = [
         {
-          get: (key: string) => {
-            const data: Record<string, unknown> = {
-              contestId: 'contest-1',
-              contestName: 'Contest 1',
-              subTitle: 'Subtitle 1',
-              startDate: '2025-11-01T00:00:00Z',
-              endDate: '2025-11-30T23:59:59Z',
-              createdAt: '2025-10-01T10:00:00Z',
-              updatedAt: '2025-10-01T10:00:00Z',
-              tasks: [
-                {
-                  taskId: 'task-1',
-                  title: 'Task 1',
-                  type: '1Vs1_tasks',
-                  description: 'Description 1',
-                  goal: 5,
-                },
-              ],
-            };
-            return data[key];
-          },
+          contestId: 'contest-1',
+          contestName: 'Contest 1',
+          subTitle: 'Subtitle 1',
+          startDate: '2025-11-01T00:00:00Z',
+          endDate: '2025-11-30T23:59:59Z',
+          createdAt: '2025-10-01T10:00:00Z',
+          updatedAt: '2025-10-01T10:00:00Z',
+          tasks: [
+            {
+              taskId: 'task-1',
+              title: 'Task 1',
+              type: '1Vs1_tasks',
+              description: 'Description 1',
+              goal: 5,
+            },
+          ],
         },
       ];
 
-      mockNeo4jService.read.mockResolvedValue({ records: mockRecords });
+      mockNeo4jService.read.mockResolvedValue(mockRecords);
 
       // Act
       const result = await service.getAllContests();
@@ -174,7 +173,7 @@ describe('ContestsService', () => {
 
     it('should return empty array when no contests exist', async () => {
       // Arrange
-      mockNeo4jService.read.mockResolvedValue({ records: [] });
+      mockNeo4jService.read.mockResolvedValue([]);
 
       // Act
       const result = await service.getAllContests();
@@ -190,31 +189,26 @@ describe('ContestsService', () => {
       const contestId = 'contest-123';
       const mockRecords = [
         {
-          get: (key: string) => {
-            const data: Record<string, unknown> = {
-              contestId: 'contest-123',
-              contestName: 'Test Contest',
-              subTitle: 'Test Subtitle',
-              startDate: '2025-11-01T00:00:00Z',
-              endDate: '2025-11-30T23:59:59Z',
-              createdAt: '2025-10-01T10:00:00Z',
-              updatedAt: '2025-10-01T10:00:00Z',
-              tasks: [
-                {
-                  taskId: 'task-1',
-                  title: 'Task 1',
-                  type: '1Vs1_tasks',
-                  description: 'Description 1',
-                  goal: 5,
-                },
-              ],
-            };
-            return data[key];
-          },
+          contestId: 'contest-123',
+          contestName: 'Test Contest',
+          subTitle: 'Test Subtitle',
+          startDate: '2025-11-01T00:00:00Z',
+          endDate: '2025-11-30T23:59:59Z',
+          createdAt: '2025-10-01T10:00:00Z',
+          updatedAt: '2025-10-01T10:00:00Z',
+          tasks: [
+            {
+              taskId: 'task-1',
+              title: 'Task 1',
+              type: '1Vs1_tasks',
+              description: 'Description 1',
+              goal: 5,
+            },
+          ],
         },
       ];
 
-      mockNeo4jService.read.mockResolvedValue({ records: mockRecords });
+      mockNeo4jService.read.mockResolvedValue(mockRecords);
 
       // Act
       const result = await service.getContestById(contestId);
@@ -231,7 +225,7 @@ describe('ContestsService', () => {
     it('should throw NotFoundException when contest does not exist', async () => {
       // Arrange
       const contestId = 'nonexistent-contest';
-      mockNeo4jService.read.mockResolvedValue({ records: [] });
+      mockNeo4jService.read.mockResolvedValue([]);
 
       // Act & Assert
       await expect(service.getContestById(contestId)).rejects.toThrow(
@@ -244,31 +238,26 @@ describe('ContestsService', () => {
       const contestId = 'contest-no-tasks';
       const mockRecords = [
         {
-          get: (key: string) => {
-            const data: Record<string, unknown> = {
-              contestId: 'contest-no-tasks',
-              contestName: 'Empty Contest',
-              subTitle: null,
-              startDate: '2025-11-01T00:00:00Z',
-              endDate: '2025-11-30T23:59:59Z',
-              createdAt: '2025-10-01T10:00:00Z',
-              updatedAt: '2025-10-01T10:00:00Z',
-              tasks: [
-                {
-                  taskId: null,
-                  title: null,
-                  type: null,
-                  description: null,
-                  goal: null,
-                },
-              ],
-            };
-            return data[key];
-          },
+          contestId: 'contest-no-tasks',
+          contestName: 'Empty Contest',
+          subTitle: null,
+          startDate: '2025-11-01T00:00:00Z',
+          endDate: '2025-11-30T23:59:59Z',
+          createdAt: '2025-10-01T10:00:00Z',
+          updatedAt: '2025-10-01T10:00:00Z',
+          tasks: [
+            {
+              taskId: null,
+              title: null,
+              type: null,
+              description: null,
+              goal: null,
+            },
+          ],
         },
       ];
 
-      mockNeo4jService.read.mockResolvedValue({ records: mockRecords });
+      mockNeo4jService.read.mockResolvedValue(mockRecords);
 
       // Act
       const result = await service.getContestById(contestId);
@@ -284,23 +273,18 @@ describe('ContestsService', () => {
       // Arrange
       const mockRecords = [
         {
-          get: (key: string) => {
-            const data: Record<string, unknown> = {
-              contestId: 'future-contest',
-              contestName: 'Future Contest',
-              subTitle: 'Coming soon',
-              startDate: '2025-12-01T00:00:00Z',
-              endDate: '2025-12-31T23:59:59Z',
-              createdAt: '2025-10-01T10:00:00Z',
-              updatedAt: '2025-10-01T10:00:00Z',
-              tasks: [],
-            };
-            return data[key];
-          },
+          contestId: 'future-contest',
+          contestName: 'Future Contest',
+          subTitle: 'Coming soon',
+          startDate: '2025-12-01T00:00:00Z',
+          endDate: '2025-12-31T23:59:59Z',
+          createdAt: '2025-10-01T10:00:00Z',
+          updatedAt: '2025-10-01T10:00:00Z',
+          tasks: [],
         },
       ];
 
-      mockNeo4jService.read.mockResolvedValue({ records: mockRecords });
+      mockNeo4jService.read.mockResolvedValue(mockRecords);
 
       // Act
       const result = await service.getAvailableContests();
@@ -370,9 +354,9 @@ describe('ContestsService', () => {
     it('should delete contest successfully', async () => {
       // Arrange
       const contestId = 'contest-123';
-      mockNeo4jService.write.mockResolvedValue({
-        records: [{ get: () => ({ toNumber: () => 1 }) }],
-      });
+      mockNeo4jService.write.mockResolvedValue([
+        { deletedCount: { toNumber: () => 1 } },
+      ]);
 
       // Act
       const result = await service.deleteContest(contestId);
@@ -388,9 +372,9 @@ describe('ContestsService', () => {
     it('should throw NotFoundException when contest does not exist', async () => {
       // Arrange
       const contestId = 'nonexistent-contest';
-      mockNeo4jService.write.mockResolvedValue({
-        records: [{ get: () => ({ toNumber: () => 0 }) }],
-      });
+      mockNeo4jService.write.mockResolvedValue([
+        { deletedCount: { toNumber: () => 0 } },
+      ]);
 
       // Act & Assert
       await expect(service.deleteContest(contestId)).rejects.toThrow(

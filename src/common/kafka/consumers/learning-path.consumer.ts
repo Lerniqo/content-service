@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 import { EachMessagePayload } from 'kafkajs';
@@ -73,7 +72,9 @@ export class LearningPathConsumer implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     try {
-      const messageHandler: MessageHandler = this.handleLearningPath.bind(this);
+      const messageHandler: MessageHandler = this.handleLearningPath.bind(
+        this,
+      ) as MessageHandler;
       await this.kafkaService.subscribe(
         ['learning_path.response'],
         {
@@ -188,9 +189,13 @@ export class LearningPathConsumer implements OnModuleInit {
         learning_goal: responseMessage.eventData.goal,
         learning_path: responseMessage.eventData.learning_path,
         mastery_scores:
-          responseMessage.eventData.metadata?.mastery_scores || {},
+          (responseMessage.eventData.metadata?.mastery_scores as Record<
+            string,
+            unknown
+          >) || {},
         available_resources:
-          responseMessage.eventData.metadata?.available_resources || [],
+          (responseMessage.eventData.metadata
+            ?.available_resources as unknown[]) || [],
       };
 
       // Save the learning path

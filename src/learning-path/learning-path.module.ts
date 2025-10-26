@@ -5,9 +5,10 @@ import { LearningPathController } from './learning-path.controller';
 import { Neo4jModule } from '../common/neo4j/neo4j.module';
 import { KafkaModule } from '../common/kafka/kafka.module';
 import { LearningPathConsumer } from '../common/kafka/consumers/learning-path.consumer';
+import { ProgressServiceClientModule } from '../common/clients/progress-service-client.module';
 
 @Module({
-  imports: [Neo4jModule, KafkaModule],
+  imports: [Neo4jModule, KafkaModule, ProgressServiceClientModule],
   controllers: [LearningPathController],
   providers: [LearningPathService],
   exports: [LearningPathService],

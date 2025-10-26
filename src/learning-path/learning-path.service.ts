@@ -1,5 +1,6 @@
 /* eslint-disable prettier/prettier */
 import {
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -17,6 +18,7 @@ import {
 import { LearningPathResponseDto } from './dto/learning-path-response.dto';
 import { GetLearningPathResponseDto } from './dto/learning-path.dto';
 import { CreateLearningPathDto } from './dto/create-learning-path.dto';
+import { ProgressServiceClient } from 'src/common/clients';
 
 interface LearningPathRequestEvent {
   eventId: string;
@@ -42,6 +44,7 @@ export class LearningPathService {
   private readonly aiServiceUrl: string;
 
   constructor(
+    private readonly progressServiceClient: ProgressServiceClient,
     private readonly neo4jService: Neo4jService,
     private readonly kafkaService: KafkaService,
     private readonly configService: ConfigService,
@@ -550,6 +553,12 @@ export class LearningPathService {
       { userId },
     );
 
+    // Check if user can have a learning path
+    const canHaveLearningPath = await this.progressServiceClient.getUserCanHaveLearningPath(userId);
+    if (!canHaveLearningPath) {
+      throw new ForbiddenException('User needs to do more activities before having a learning path');
+    }
+
     // Simplified Cypher query that doesn't create users in GET request
     const cypher = `
       MATCH (u:User {id: $userId})
@@ -590,7 +599,38 @@ export class LearningPathService {
       const result = (await this.neo4jService.read(cypher, { userId })) as Array<Record<string, any>>;
 
       if (!result || result.length === 0) {
-        throw new NotFoundException(`User with ID ${userId} not found`);
+
+        // get user details from neo4j to check if learning path is processing
+        const checkCypher = `
+          MATCH (u:User {id: $userId})
+          OPTIONAL MATCH (u)-[:HAS_LEARNING_PATH]->(lp:LearningPath)
+          RETURN lp.status as status, lp.learningGoal as learningGoal
+        `;
+        interface CheckResult {
+          status?: string;
+          learningGoal?: string;
+        }
+        const checkResult = (await this.neo4jService.read(checkCypher, { userId })) as CheckResult[];
+        if (!checkResult || checkResult.length === 0) {
+          throw new NotFoundException('Learning path not found for this user');
+        }
+
+        if (checkResult.length > 0) {
+          const status = checkResult[0]?.status;
+          if (status === 'processing') {
+            throw new NotFoundException('Learning path is being generated');
+          }
+        }
+
+        const newLearningPath: LearningPathResponseDto = await this.requestLearningPath(userId, {
+          learningGoal: checkResult[0]?.learningGoal || 'General Learning Goal',
+          currentLevel: LearningLevel.BEGINNER,
+        });
+
+        if (newLearningPath.status === 'processing') {
+          throw new NotFoundException('Learning path is being generated');
+        }
+        throw new NotFoundException('Learning path not found for this user');
       }
 
       const record = result[0];

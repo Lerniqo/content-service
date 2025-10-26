@@ -15,6 +15,7 @@ import { SyllabusModule } from '../syllabus/syllabus.module';
 import { ConceptsModule } from '../concepts/concepts.module';
 import { LearningPathModule } from '../learning-path/learning-path.module';
 import { ContestsModule } from '../contests/contests.module';
+import { ProgressServiceClientModule } from '../common/clients/progress-service-client.module';
 import { AuthMiddleware } from '../common/middleware/auth.middleware';
 
 @Module({
@@ -61,6 +62,7 @@ import { AuthMiddleware } from '../common/middleware/auth.middleware';
     ConceptsModule,
     LearningPathModule,
     ContestsModule,
+    ProgressServiceClientModule,
   ],
   controllers: [AppController],
   providers: [AppService],

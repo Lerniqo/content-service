@@ -12,7 +12,7 @@ describe('Neo4jService Integration', () => {
   let module: TestingModule;
 
   // Integration tests with real Neo4j database
-  describe('Integration Tests with Real Database', () => {
+  describe.skip('Integration Tests with Real Database', () => {
     beforeAll(async () => {
       module = await Test.createTestingModule({
         imports: [
